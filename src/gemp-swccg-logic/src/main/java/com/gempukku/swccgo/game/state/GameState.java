@@ -1585,8 +1585,9 @@ public class GameState implements Snapshotable<GameState> {
                 zoneCards.get(0).setZone(zone);
                 cardsToAdd.add(zoneCards.get(0));
 
-                // if card, or new top card, is an 'insert' card then disallow shortcut
-                if (card.isInserted() || zoneCards.get(0).isInserted()) {
+                // if card, or new top card, is an 'insert' card or face-up in Reserve then disallow shortcut
+                if (card.isInserted() || zoneCards.get(0).isInserted()
+                        || card.isFaceUpInReserveDeck() || zoneCards.get(0).isFaceUpInReserveDeck()) {
                     setInsertCardFound(true);
                     setSkipListenerUpdateAllowed(false);
                 }
@@ -1631,6 +1632,7 @@ public class GameState implements Snapshotable<GameState> {
         toCard.setSideways(fromCard.isSideways());
         toCard.setBlownAway(fromCard.isBlownAway());
         toCard.setInserted(fromCard.isInserted());
+        toCard.setFaceUpInReserveDeck(fromCard.isFaceUpInReserveDeck());
         toCard.setInsertCardRevealed(fromCard.isInsertCardRevealed());
         toCard.setHit(fromCard.isHit());
         toCard.setDisarmed(fromCard.isDisarmed());
@@ -1676,6 +1678,7 @@ public class GameState implements Snapshotable<GameState> {
         card.setSideways(false);
         card.setBlownAway(false);
         card.setInserted(false);
+        card.setFaceUpInReserveDeck(false);
         card.setInsertCardRevealed(false);
         card.setHit(false);
         card.setDisarmed(false);
@@ -2798,9 +2801,9 @@ public class GameState implements Snapshotable<GameState> {
             }
         }
 
-        // Include "insert" cards on top of reserve decks
+        // Include "insert" cards and face-up Reserve tops on top of reserve decks
         for (PhysicalCard topOfReserveDeck : getTopCardsOfReserveDecks()) {
-            if (topOfReserveDeck.isInserted())
+            if (topOfReserveDeck.isInserted() || topOfReserveDeck.isFaceUpInReserveDeck())
                 if (physicalCardVisitor.visitPhysicalCard(topOfReserveDeck))
                     return true;
         }
