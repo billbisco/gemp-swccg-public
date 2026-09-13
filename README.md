@@ -12,7 +12,7 @@ GEMP exists because of a long line of volunteer work. Thanks to everyone who bui
 
 ## Note
 
-This repository is **not** an official Players Committee project and is **not** affiliated with Lucasfilm or Disney. You can visit the official SWCCG Player's Committee at [starwarsccg.org](https://www.starwarsccg.org/).
+This is **not** affiliated with Lucasfilm or Disney. You can visit the official SWCCG Player's Committee including their version of GEMP at [starwarsccg.org](https://www.starwarsccg.org/).
 
 License: [MIT](LICENSE). See [NOTICE](NOTICE).
 
