@@ -1,0 +1,23 @@
+swccg-gemp
+==========
+
+This project is an independent GEMP host for Star Wars CCG.
+It is not an official Players Committee service and is not
+affiliated with Lucasfilm Ltd. or Disney.
+
+The software is based on GEMP-SWCCG, originally published
+under the MIT License. Copyright (c) 2018 Troy Biesterfeld
+and subsequent contributors.
+
+GEMP itself grew out of earlier GEMP work for the Lord of
+the Rings TCG. Thanks to everyone who designed, coded,
+tested, and operated LOTR GEMP and SWCCG GEMP over the
+years, including Players Committee volunteers who implemented
+cards and kept the public table running.
+
+Star Wars CCG names, card text, and related marks belong to
+their owners. This repository provides game-server software,
+not a license to that intellectual property.
+
+Upstream history:
+https://github.com/PlayersCommittee/gemp-swccg-public
