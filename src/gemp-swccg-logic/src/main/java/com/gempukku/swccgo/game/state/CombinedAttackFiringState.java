@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Tracks Premiere Combined Attack (1_75) while two or more starship weapons fire as one interrupt action.
+ * Tracks Premiere Combined Attack (1_75) or Precise Attack (1_265) while two or more weapons fire as one interrupt action.
  *
  * Gergall 2015 + 2023 Advanced Rulebook: fire weapons one at a time (pay then draw each). Hits are not
  * checked until all firings complete. Sum destinies (draw modifiers stay on each draw) and apply TOTAL
@@ -52,13 +52,16 @@ public class CombinedAttackFiringState {
      * to the grand total. Snapshot Variable X now, while WeaponFiringState is still active.
      */
     public void addFiring(PhysicalCard weapon, PhysicalCard cardFiringWeapon,
-                          SwccgBuiltInCardBlueprint permanentWeapon, float drawModifiedDestiny,
+                          SwccgBuiltInCardBlueprint permanentWeapon, Float drawModifiedDestiny,
                           float totalModifierSnapshot, float variableXSnapshot,
                           DrawDestinyEffect drawDestinyEffect) {
         if (weapon == null) {
             return;
         }
-        _destinyDraws.add(drawModifiedDestiny);
+        // Failed/canceled draws do not exist and are not 0. Only successful draws enter the sum.
+        if (drawModifiedDestiny != null) {
+            _destinyDraws.add(drawModifiedDestiny);
+        }
         int id = weapon.getCardId();
         WeaponRecord record = _recordsByWeaponId.get(id);
         if (record == null) {
@@ -86,8 +89,15 @@ public class CombinedAttackFiringState {
         _totalMods.add(new TotalModContribution(title, amount, cumulative));
     }
 
+    /**
+     * Successful weapon destiny draws only. Failed or canceled draws are omitted, not recorded as 0.
+     */
     public int getCompletedDrawCount() {
         return _destinyDraws.size();
+    }
+
+    public boolean hasSuccessfulDraw() {
+        return !_destinyDraws.isEmpty();
     }
 
     public float getDrawSum() {
@@ -109,13 +119,7 @@ public class CombinedAttackFiringState {
         // because in a normal firing each copy only affects its own weapon. Combined Attack collects
         // those copies onto one grand total, so same title still counts once unless we later teach
         // this path about cards that actually say "cumulatively".
-        Map<String, Float> onceByTitle = new LinkedHashMap<String, Float>();
-        for (TotalModContribution contribution : _totalMods) {
-            String title = contribution._title != null ? contribution._title : "";
-            if (!onceByTitle.containsKey(title)) {
-                onceByTitle.put(title, contribution._amount);
-            }
-        }
+        Map<String, Float> onceByTitle = sameTitleOnceMods();
         float total = 0f;
         for (Float value : onceByTitle.values()) {
             if (value != null) {
@@ -152,8 +156,9 @@ public class CombinedAttackFiringState {
             String sign = totalMods > 0f ? "+" : "";
             mods = ". Total modifiers " + sign + totalModsFormatted;
         }
-        return "Combined Attack destinies: " + formatAddends(_destinyDraws) + " = " + drawSumFormatted
-                + mods + ". Total weapon destiny " + grandTotalFormatted + ".";
+        String sourceTitle = sourceTitle();
+        return sourceTitle + " destinies: " + formatAddends(_destinyDraws) + " = " + drawSumFormatted
+                + mods + formatTotalModSources() + ". Total weapon destiny " + grandTotalFormatted + ".";
     }
 
     public String getAddedDestiniesMessage(String drawSumFormatted) {
@@ -162,20 +167,30 @@ public class CombinedAttackFiringState {
                 GuiUtils.formatAsString(getGrandTotal()));
     }
 
-    public static String getPerWeaponTotalMessage(PhysicalCard weapon, float drawSum, float totalModifier, float total) {
+    public String getPerWeaponTotalMessage(PhysicalCard weapon, float drawSum, float totalModifier, float total) {
         String weaponLink = GameUtils.getCardLink(weapon);
         if (totalModifier == 0f) {
-            return "Combined Attack total for " + weaponLink + ": " + GuiUtils.formatAsString(total);
+            String sourceTitle = _source != null && _source.getTitle() != null ? _source.getTitle() : "Combined Attack";
+            return sourceTitle + " total for " + weaponLink + ": " + GuiUtils.formatAsString(total);
         }
         String sign = totalModifier > 0f ? "+" : "";
-        return "Combined Attack total for " + weaponLink + ": " + GuiUtils.formatAsString(drawSum)
+        return (_source != null && _source.getTitle() != null ? _source.getTitle() : "Combined Attack") + " total for " + weaponLink + ": " + GuiUtils.formatAsString(drawSum)
                 + sign + GuiUtils.formatAsString(totalModifier) + "=" + GuiUtils.formatAsString(total);
     }
 
     public String getFiringDrawsMessage(PhysicalCard weapon, float drawDestiny) {
         String weaponLink = weapon != null ? GameUtils.getCardLink(weapon) : "weapon";
-        return "Combined Attack: " + weaponLink + " destiny " + GuiUtils.formatAsString(drawDestiny)
+        return sourceTitle() + ": " + weaponLink + " destiny " + GuiUtils.formatAsString(drawDestiny)
                 + " (draw modifiers only)";
+    }
+
+    public String getFailedDrawMessage(PhysicalCard weapon) {
+        String weaponLink = weapon != null ? GameUtils.getCardLink(weapon) : "weapon";
+        return sourceTitle() + ": " + weaponLink + " destiny draw failed (no destiny)";
+    }
+
+    public String getNoTotalMessage() {
+        return sourceTitle() + ": no weapon destiny total (all draws failed or were canceled)";
     }
 
     public String getFiringSubtotalMessage(PhysicalCard weapon, float subtotal) {
@@ -184,16 +199,57 @@ public class CombinedAttackFiringState {
 
     public static String formatAddends(List<Float> values) {
         if (values == null || values.isEmpty()) {
-            return "0";
+            return "(none)";
         }
         StringBuilder sb = new StringBuilder();
+        int written = 0;
         for (int i = 0; i < values.size(); i++) {
-            if (i > 0) {
+            Float value = values.get(i);
+            if (value == null) {
+                continue;
+            }
+            if (written > 0) {
                 sb.append(" + ");
             }
-            Float value = values.get(i);
-            sb.append(GuiUtils.formatAsString(value != null ? value : 0f));
+            sb.append(GuiUtils.formatAsString(value));
+            written++;
         }
+        return written == 0 ? "(none)" : sb.toString();
+    }
+
+    private String sourceTitle() {
+        return _source != null && _source.getTitle() != null ? _source.getTitle() : "Combined Attack";
+    }
+
+    private Map<String, Float> sameTitleOnceMods() {
+        Map<String, Float> onceByTitle = new LinkedHashMap<String, Float>();
+        for (TotalModContribution contribution : _totalMods) {
+            String title = contribution._title != null ? contribution._title : "";
+            if (!onceByTitle.containsKey(title)) {
+                onceByTitle.put(title, contribution._amount);
+            }
+        }
+        return onceByTitle;
+    }
+
+    private String formatTotalModSources() {
+        Map<String, Float> onceByTitle = sameTitleOnceMods();
+        if (onceByTitle.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(" (");
+        boolean first = true;
+        for (Map.Entry<String, Float> entry : onceByTitle.entrySet()) {
+            if (!first) {
+                sb.append(", ");
+            }
+            first = false;
+            String title = entry.getKey() != null && !entry.getKey().isEmpty() ? entry.getKey() : "modifier";
+            float amount = entry.getValue() != null ? entry.getValue() : 0f;
+            String sign = amount > 0f ? "+" : "";
+            sb.append(title).append(" ").append(sign).append(GuiUtils.formatAsString(amount));
+        }
+        sb.append(")");
         return sb.toString();
     }
 
