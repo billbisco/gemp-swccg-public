@@ -985,11 +985,20 @@ public class Card_1_256_Tests {
             if (text.contains("weapons") || text.contains("battle_initiated") || text.contains("battle destiny")) {
                 break;
             }
-            if (scn.LSAnyDecisionsAvailable()) {
-                break;
-            }
             if (text.contains("use") && text.contains("force")) {
                 scn.PassForceUseResponses();
+                continue;
+            }
+            if (scn.LSAnyDecisionsAvailable()) {
+                try {
+                    var acts = scn.GetLSAvailableActions();
+                    if (acts != null && !acts.isEmpty()) {
+                        break;
+                    }
+                } catch (RuntimeException ignored) {
+                    break;
+                }
+                scn.LSPass();
                 continue;
             }
             if (scn.DSAnyDecisionsAvailable()) {
