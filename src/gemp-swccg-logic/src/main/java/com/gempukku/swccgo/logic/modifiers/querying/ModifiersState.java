@@ -124,6 +124,14 @@ public interface ModifiersState {
     boolean hasParticipatedInBattleAtOtherLocation(PhysicalCard card, PhysicalCard location);
 
     /**
+     * Clears the battle participation flag for the specified card this turn.
+     * Used when a card is explicitly allowed to battle again (Here We Go Again / Counterattack).
+     *
+     * @param card the card
+     */
+    void clearBattleParticipation(PhysicalCard card);
+
+    /**
      * Records a completed battle for this turn.
      * @param record the battle record
      */
