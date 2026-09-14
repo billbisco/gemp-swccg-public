@@ -87,6 +87,7 @@ public class PhysicalCardImpl implements PhysicalCard, Cloneable {
     private boolean _isLiberationCard;
     private boolean _isBluffCard;
     private boolean _isCombatCard;
+    private boolean _isBuriedMine;
     private boolean _isSpaceSlugBelly;
     private boolean _isRotated;
     private boolean _isRotatedByTurboliftComplex;
@@ -211,6 +212,7 @@ public class PhysicalCardImpl implements PhysicalCard, Cloneable {
         snapshot._isBluffCard = _isBluffCard;
         snapshot._isLiberationCard = _isLiberationCard;
         snapshot._isCombatCard = _isCombatCard;
+        snapshot._isBuriedMine = _isBuriedMine;
         snapshot._isSpaceSlugBelly = _isSpaceSlugBelly;
         snapshot._abilityWhenSoupEaten = _abilityWhenSoupEaten;
         snapshot._beheaded = _beheaded;
@@ -1385,6 +1387,16 @@ public class PhysicalCardImpl implements PhysicalCard, Cloneable {
     @Override
     public boolean isCombatCard() {
         return _isCombatCard;
+    }
+
+    @Override
+    public void setBuriedMine(boolean buriedMine) {
+        _isBuriedMine = buriedMine;
+    }
+
+    @Override
+    public boolean isBuriedMine() {
+        return _isBuriedMine;
     }
 
     @Override
