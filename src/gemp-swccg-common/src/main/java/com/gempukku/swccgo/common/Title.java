@@ -29,6 +29,7 @@ public interface Title {
     String A280_Sharpshooter_Rifle = "A280 Sharpshooter Rifle";
     String AAT_Laser_Cannon = "AAT Laser Cannon";
     String Abyssin_Ornament = "Abyssin Ornament";
+    String Access_Denied = "Access Denied";
     String Ackbar = "Admiral Ackbar";
     String Activate_The_Droids = "Activate The Droids";
     String Advance_Preparation = "Advance Preparation";
@@ -969,12 +970,14 @@ public interface Title {
     String Rennek = "Rennek";
     String Report_To_Lord_Vader = "Report To Lord Vader";
     String Res_Luk_Raauf = "Res Luk Ra'auf";
+    String Rescue_In_The_Clouds = "Rescue In The Clouds";
     String Rescue_The_Princess = "Rescue The Princess";
     String Resistance = "Resistance";
     String Responsibility_Of_Command = "Responsibility Of Command";
     String Restore_Freedom_To_The_Galaxy = "Restore Freedom To The Galaxy";
     String Restraining_Bolt = "Restraining Bolt";
     String Restricted_Deployment = "Restricted Deployment";
+    String Restricted_Access = "Restricted Access";
     String Retract_The_Bridge = "Retract The Bridge";
     String Return_Of_A_Jedi = "Return Of A Jedi";
     String Return_Of_The_Jedi = "Return Of The Jedi";
@@ -1048,6 +1051,7 @@ public interface Title {
     String Senate_Hovercam = "Senate Hovercam";
     String Send_A_Detachment_Down = "Send A Detachment Down";
     String Sense = "Sense";
+    String Sensor_Panel = "Sensor Panel";
     String Separatist_Command_Center = "Separatist Command Center";
     String Set_For_Stun = "Set For Stun";
     String Set_Your_Course_For_Alderaan = "Set Your Course For Alderaan";
@@ -1213,6 +1217,7 @@ public interface Title {
     String Tibanna_Gas_Miner = "Tibanna Gas Miner";
     String Tibrin = "Tibrin";
     String TIE_Assault_Squadron = "TIE Assault Squadron";
+    String TIE_Sentry_Ships = "TIE Sentry Ships";
     String TK421 = "TK-421";
     String TK422 = "TK-422";
     String Too_Cold_For_Speeders = "Too Cold For Speeders";
@@ -1227,6 +1232,7 @@ public interface Title {
     String Trooper_Assault = "Trooper Assault";
     String Trooper_Charge = "Trooper Charge";
     String Tunnel_Vision = "Tunnel Vision";
+    String Turn_It_Off_Turn_It_Off = "Turn It Off! Turn It Off!";
     String Turbolaser_Battery = "Turbolaser Battery";
     String Tuanul_Village = "Jakku: Tuanul Village";
     String Tusken_Breath_Mask = "Tusken Breath Mask";
