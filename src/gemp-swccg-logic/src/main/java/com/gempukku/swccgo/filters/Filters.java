@@ -6496,9 +6496,9 @@ public class Filters {
                     return false;
                 }
 
-                // 5) If starship, check that it is piloted and has astromech or nav computer aboard
+                // 5) If starship, check that it is piloted (or MayPilotWithAstromech) and has astromech or nav computer aboard
                 if (cardToMove.getBlueprint().getCardCategory() == CardCategory.STARSHIP
-                        && (!modifiersQuerying.isPiloted(gameState, cardToMove, false)
+                        && (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)
                         || !modifiersQuerying.hasAstromechOrNavComputer(gameState, cardToMove))) {
                     return false;
                 }
@@ -6575,7 +6575,7 @@ public class Filters {
 
                 // 4) Check that starship is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -6689,7 +6689,7 @@ public class Filters {
 
                 // 7) Check that it is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -6805,7 +6805,7 @@ public class Filters {
 
                 // 3) Check that it is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -6901,7 +6901,7 @@ public class Filters {
 
                 // 3) Check that it is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, true)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, true)) {
                     return false;
                 }
 
@@ -6948,8 +6948,8 @@ public class Filters {
                     return false;
                 }
 
-                // 4) Check that it is piloted
-                if (!modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                // 4) Check that it is piloted (or MayPilotWithAstromech)
+                if (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -7011,8 +7011,8 @@ public class Filters {
                     return false;
                 }
 
-                // 4) Check that it is piloted
-                if (!modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                // 4) Check that it is piloted (or MayPilotWithAstromech)
+                if (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -7099,8 +7099,8 @@ public class Filters {
                     return false;
                 }
 
-                // 3) Check that it is piloted
-                if (!modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                // 3) Check that it is piloted (or MayPilotWithAstromech)
+                if (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -7742,7 +7742,7 @@ public class Filters {
 
                 if ((cardToMove.getBlueprint().getCardCategory() == CardCategory.STARSHIP
                         || cardToMove.getBlueprint().getCardCategory() == CardCategory.VEHICLE)
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
