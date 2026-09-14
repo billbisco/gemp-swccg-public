@@ -1585,8 +1585,9 @@ public class GameState implements Snapshotable<GameState> {
                 zoneCards.get(0).setZone(zone);
                 cardsToAdd.add(zoneCards.get(0));
 
-                // if card, or new top card, is an 'insert' card then disallow shortcut
-                if (card.isInserted() || zoneCards.get(0).isInserted()) {
+                // if card, or new top card, is an 'insert' card or face-up in Reserve then disallow shortcut
+                if (card.isInserted() || zoneCards.get(0).isInserted()
+                        || card.isFaceUpInReserveDeck() || zoneCards.get(0).isFaceUpInReserveDeck()) {
                     setInsertCardFound(true);
                     setSkipListenerUpdateAllowed(false);
                 }
@@ -1631,6 +1632,7 @@ public class GameState implements Snapshotable<GameState> {
         toCard.setSideways(fromCard.isSideways());
         toCard.setBlownAway(fromCard.isBlownAway());
         toCard.setInserted(fromCard.isInserted());
+        toCard.setFaceUpInReserveDeck(fromCard.isFaceUpInReserveDeck());
         toCard.setInsertCardRevealed(fromCard.isInsertCardRevealed());
         toCard.setHit(fromCard.isHit());
         toCard.setDisarmed(fromCard.isDisarmed());
@@ -1676,6 +1678,7 @@ public class GameState implements Snapshotable<GameState> {
         card.setSideways(false);
         card.setBlownAway(false);
         card.setInserted(false);
+        card.setFaceUpInReserveDeck(false);
         card.setInsertCardRevealed(false);
         card.setHit(false);
         card.setDisarmed(false);
@@ -2709,6 +2712,17 @@ public class GameState implements Snapshotable<GameState> {
                 treatCaptiveAsActive = true;
             }
 
+            // Besieged deploys on a captured starship. TO_BE_DEPLOYED_ON does not otherwise
+            // accept captured starships as deploy targets, even with INCLUDE_CAPTIVE.
+            if (physicalCard.isCapturedStarship()
+                    && source != null
+                    && source.getBlueprint() != null
+                    && Title.Besieged.equals(source.getBlueprint().getTitle())
+                    && targetFiltersMap != null
+                    && targetFiltersMap.get(TargetingReason.TO_BE_DEPLOYED_ON) != null) {
+                treatCaptiveAsActive = true;
+            }
+
             // Check if the card can be spotted as "active" and include it if it can be.
             if (isCardInPlayActive(physicalCard, includeExcludedFromBattle, includeUndercoverForThisCard, treatCaptiveAsActive,
                     includeConcealed, includeWeaponsForStealingForThisCard, includeMissing, false, includeSuspended, includeLocalTroubleNonParticipant)) {
@@ -2798,9 +2812,9 @@ public class GameState implements Snapshotable<GameState> {
             }
         }
 
-        // Include "insert" cards on top of reserve decks
+        // Include "insert" cards and face-up Reserve tops on top of reserve decks
         for (PhysicalCard topOfReserveDeck : getTopCardsOfReserveDecks()) {
-            if (topOfReserveDeck.isInserted())
+            if (topOfReserveDeck.isInserted() || topOfReserveDeck.isFaceUpInReserveDeck())
                 if (physicalCardVisitor.visitPhysicalCard(topOfReserveDeck))
                     return true;
         }
@@ -3902,11 +3916,19 @@ public class GameState implements Snapshotable<GameState> {
      * @param localTroubleParticipants the Local Trouble battle participants, or null if not a Local Trouble battle
      */
     public void beginBattle(String playerId, PhysicalCard location, boolean isLocalTrouble, Collection<PhysicalCard> localTroubleParticipants, Collection<Modifier> extraModifiers) {
-        _battleState = new BattleState(getGame(), playerId, location, isLocalTrouble);
+        beginBattle(playerId, location, isLocalTrouble, localTroubleParticipants, false, null, extraModifiers);
+    }
+
+    public void beginBattle(String playerId, PhysicalCard location, boolean isLocalTrouble, Collection<PhysicalCard> localTroubleParticipants, boolean isBesieged, Collection<PhysicalCard> besiegedParticipants, Collection<Modifier> extraModifiers) {
+        _battleState = new BattleState(getGame(), playerId, location, isLocalTrouble, isBesieged);
 
         if (isLocalTrouble) {
             _battleState.setLocalTroubleParticipants(localTroubleParticipants);
             _battleState.addParticipants(this, localTroubleParticipants);
+        }
+        else if (isBesieged) {
+            _battleState.setBesiegedParticipants(besiegedParticipants);
+            _battleState.addParticipants(this, besiegedParticipants);
         }
         else {
             //Initial non-captive participants
@@ -3917,8 +3939,10 @@ public class GameState implements Snapshotable<GameState> {
                     Filters.and(Filters.initiallyParticipatesInBattle(location), Filters.battlingCaptive)));
         }
 
-        for (Modifier modifier: extraModifiers) {
-            _game.getModifiersEnvironment().addUntilEndOfBattleModifier(modifier);
+        if (extraModifiers != null) {
+            for (Modifier modifier: extraModifiers) {
+                _game.getModifiersEnvironment().addUntilEndOfBattleModifier(modifier);
+            }
         }
 
         Collection<PhysicalCard> allCardsParticipating = _battleState.getAllCardsParticipating();
