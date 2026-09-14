@@ -5361,12 +5361,12 @@ public class GameConditions {
      * @param game the game
      * @return true or false
      */
-    public static boolean canDrawDestinyAndChoose(SwccgGame game, int drawX) {
+    public static boolean canDrawDestinyAndChoose(SwccgGame game, int chooseY) {
         DrawDestinyState drawDestinyState = game.getGameState().getTopDrawDestinyState();
         if (drawDestinyState == null)
             return false;
 
-        return drawDestinyState.getDrawDestinyEffect().canDrawAndChoose(game, drawX);
+        return drawDestinyState.getDrawDestinyEffect().canDrawAndChoose(game, chooseY);
     }
 
     /**
