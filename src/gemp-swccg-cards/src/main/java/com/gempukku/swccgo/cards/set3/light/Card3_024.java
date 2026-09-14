@@ -24,7 +24,7 @@ import com.gempukku.swccgo.logic.effects.TargetCardOnTableEffect;
 import com.gempukku.swccgo.logic.timing.Action;
 import com.gempukku.swccgo.logic.timing.EffectResult;
 import com.gempukku.swccgo.logic.timing.results.AboutToForfeitCardFromTableResult;
-import com.gempukku.swccgo.logic.timing.results.AboutToLoseCardFromTableResult;
+import com.gempukku.swccgo.logic.timing.results.AboutToLeaveTableResult;
 
 import java.util.Collections;
 import java.util.List;
@@ -51,76 +51,36 @@ public class Card3_024 extends AbstractDroid {
         Filter exteriorPlanetSiteOrDockingBay = Filters.or(Filters.exterior_planet_site, Filters.docking_bay);
         final TargetingReason targetingReason = TargetingReason.TO_BE_USED_INSTEAD_OF_LOST;
 
-        // Check condition(s)
-        if (TriggerConditions.isAboutToBeLost(game, effectResult, starshipOrVehicleFilter)
+        if ((TriggerConditions.isAboutToBeLost(game, effectResult, starshipOrVehicleFilter)
+                || TriggerConditions.isAboutToBeForfeitedToLostPile(game, effectResult, starshipOrVehicleFilter))
                 && GameConditions.isOncePerTurn(game, self, playerId, gameTextSourceCardId)
                 && GameConditions.isAtLocation(game, self, exteriorPlanetSiteOrDockingBay)) {
-            final AboutToLoseCardFromTableResult result = (AboutToLoseCardFromTableResult) effectResult;
-            final PhysicalCard cardToBeLost = result.getCardToBeLost();
-            if (GameConditions.canTarget(game, self, targetingReason, cardToBeLost)) {
-
+            final AboutToLeaveTableResult leaveResult = (AboutToLeaveTableResult) effectResult;
+            final PhysicalCard cardLeaving = leaveResult.getCardAboutToLeaveTable();
+            if (GameConditions.canTarget(game, self, targetingReason, cardLeaving)) {
                 final OptionalGameTextTriggerAction action = new OptionalGameTextTriggerAction(self, gameTextSourceCardId);
-                action.setText("Place " + GameUtils.getFullName(cardToBeLost) + " in Used Pile");
-                // Update usage limit(s)
+                action.setText("Place " + GameUtils.getFullName(cardLeaving) + " in Used Pile");
                 action.appendUsage(
                         new OncePerTurnEffect(action));
-                // Choose target(s)
                 action.appendTargeting(
-                        new TargetCardOnTableEffect(action, playerId, "Target card to place in Used Pile instead of Lost Pile", targetingReason, cardToBeLost) {
+                        new TargetCardOnTableEffect(action, playerId, "Target card to place in Used Pile instead of Lost Pile", targetingReason, cardLeaving) {
                             @Override
                             protected void cardTargeted(final int targetGroupId, PhysicalCard cardTargeted) {
                                 action.addAnimationGroup(cardTargeted);
-                                // Pay cost(s)
                                 action.appendCost(
                                         new LoseForceEffect(action, playerId, 1, true));
-                                // Allow response(s) - e.g. Turn It Off! Turn It Off!
                                 action.allowResponses("Place " + GameUtils.getCardLink(cardTargeted) + " in Used Pile",
                                         new RespondableEffect(action) {
                                             @Override
                                             protected void performActionResults(Action targetingAction) {
                                                 PhysicalCard finalTarget = action.getPrimaryTargetCard(targetGroupId);
-                                                // Perform result(s)
-                                                result.getPreventableCardEffect().preventEffectOnCard(finalTarget);
-                                                action.appendEffect(
-                                                        new PlaceCardInUsedPileFromTableEffect(action, finalTarget));
-                                            }
-                                        }
-                                );
-                            }
-                        }
-                );
-                return Collections.singletonList(action);
-            }
-        }
-        // Check condition(s)
-        if (TriggerConditions.isAboutToBeForfeitedToLostPile(game, effectResult, starshipOrVehicleFilter)
-                && GameConditions.isOncePerTurn(game, self, playerId, gameTextSourceCardId)
-                && GameConditions.isAtLocation(game, self, exteriorPlanetSiteOrDockingBay)) {
-            final AboutToForfeitCardFromTableResult result = (AboutToForfeitCardFromTableResult) effectResult;
-            final PhysicalCard cardToBeForfeited = result.getCardToBeForfeited();
-            if (GameConditions.canTarget(game, self, targetingReason, cardToBeForfeited)) {
-
-                final OptionalGameTextTriggerAction action = new OptionalGameTextTriggerAction(self, gameTextSourceCardId);
-                action.setText("Place " + GameUtils.getFullName(cardToBeForfeited) + " in Used Pile");
-                // Update usage limit(s)
-                action.appendUsage(
-                        new OncePerTurnEffect(action));
-                // Choose target(s)
-                action.appendTargeting(
-                        new TargetCardOnTableEffect(action, playerId, "Target card to place in Used Pile instead of Lost Pile", targetingReason, cardToBeForfeited) {
-                            @Override
-                            protected void cardTargeted(final int targetGroupId, PhysicalCard cardTargeted) {
-                                action.addAnimationGroup(cardTargeted);
-                                // Pay cost(s)
-                                action.appendCost(
-                                        new LoseForceEffect(action, playerId, 1, true));
-                                // Allow response(s) - e.g. Turn It Off! Turn It Off!
-                                action.allowResponses("Place " + GameUtils.getCardLink(cardTargeted) + " in Used Pile when forfeited",
-                                        new RespondableEffect(action) {
-                                            @Override
-                                            protected void performActionResults(Action targetingAction) {
-                                                // Perform result(s)
-                                                result.getForfeitCardEffect().setForfeitToUsedPile();
+                                                if (effectResult instanceof AboutToForfeitCardFromTableResult) {
+                                                    ((AboutToForfeitCardFromTableResult) effectResult).getForfeitCardEffect().setForfeitToUsedPile();
+                                                } else {
+                                                    leaveResult.getPreventableCardEffect().preventEffectOnCard(finalTarget);
+                                                    action.appendEffect(
+                                                            new PlaceCardInUsedPileFromTableEffect(action, finalTarget));
+                                                }
                                             }
                                         }
                                 );

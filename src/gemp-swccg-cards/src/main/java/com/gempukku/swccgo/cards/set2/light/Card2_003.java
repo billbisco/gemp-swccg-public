@@ -31,7 +31,7 @@ import com.gempukku.swccgo.logic.modifiers.PowerModifier;
 import com.gempukku.swccgo.logic.timing.Action;
 import com.gempukku.swccgo.logic.timing.EffectResult;
 import com.gempukku.swccgo.logic.timing.results.AboutToForfeitCardFromTableResult;
-import com.gempukku.swccgo.logic.timing.results.AboutToLoseCardFromTableResult;
+import com.gempukku.swccgo.logic.timing.results.AboutToLeaveTableResult;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -72,63 +72,32 @@ public class Card2_003 extends AbstractAlienRebel {
         final Filter hitAtSameSite = Filters.and(Filters.your(self), Filters.or(Filters.vehicle, Filters.starship, Filters.droid),
                 Filters.hit, Filters.atSameSite(self));
 
-        // Check condition(s) - about to be lost (not an all-cards situation)
-        if (TriggerConditions.isAboutToBeLost(game, effectResult, hitAtSameSite)) {
-            final AboutToLoseCardFromTableResult result = (AboutToLoseCardFromTableResult) effectResult;
-            final PhysicalCard cardToBeLost = result.getCardToBeLost();
-            if (GameConditions.canTarget(game, self, SpotOverride.INCLUDE_EXCLUDED_FROM_BATTLE, targetingReason, cardToBeLost)) {
-
+        if (TriggerConditions.isAboutToBeLost(game, effectResult, hitAtSameSite)
+                || TriggerConditions.isAboutToBeForfeitedToLostPile(game, effectResult, hitAtSameSite)) {
+            final AboutToLeaveTableResult leaveResult = (AboutToLeaveTableResult) effectResult;
+            final PhysicalCard cardLeaving = leaveResult.getCardAboutToLeaveTable();
+            if (GameConditions.canTarget(game, self, SpotOverride.INCLUDE_EXCLUDED_FROM_BATTLE, targetingReason, cardLeaving)) {
                 final RequiredGameTextTriggerAction action = new RequiredGameTextTriggerAction(self, gameTextSourceCardId);
                 action.setPerformingPlayer(playerId);
-                action.setText("Place " + GameUtils.getFullName(cardToBeLost) + " in Used Pile");
-                // Choose target(s)
+                action.setText("Place " + GameUtils.getFullName(cardLeaving) + " in Used Pile");
                 action.appendTargeting(
-                        new TargetCardOnTableEffect(action, playerId, "Target card to place in Used Pile instead of Lost Pile", SpotOverride.INCLUDE_EXCLUDED_FROM_BATTLE, targetingReason, cardToBeLost) {
+                        new TargetCardOnTableEffect(action, playerId, "Target card to place in Used Pile instead of Lost Pile",
+                                SpotOverride.INCLUDE_EXCLUDED_FROM_BATTLE, targetingReason, cardLeaving) {
                             @Override
                             protected void cardTargeted(final int targetGroupId, PhysicalCard cardTargeted) {
                                 action.addAnimationGroup(cardTargeted);
-                                // Allow response(s) - e.g. Turn It Off! Turn It Off!
                                 action.allowResponses("Place " + GameUtils.getCardLink(cardTargeted) + " in Used Pile",
                                         new RespondableEffect(action) {
                                             @Override
                                             protected void performActionResults(Action targetingAction) {
                                                 PhysicalCard finalTarget = action.getPrimaryTargetCard(targetGroupId);
-                                                // Perform result(s)
-                                                result.getPreventableCardEffect().preventEffectOnCard(finalTarget);
-                                                action.appendEffect(
-                                                        new PlaceCardInUsedPileFromTableEffect(action, finalTarget));
-                                            }
-                                        }
-                                );
-                            }
-                        }
-                );
-                return Collections.singletonList(action);
-            }
-        }
-
-        // Check condition(s) - about to be forfeited to Lost Pile
-        if (TriggerConditions.isAboutToBeForfeitedToLostPile(game, effectResult, hitAtSameSite)) {
-            final AboutToForfeitCardFromTableResult result = (AboutToForfeitCardFromTableResult) effectResult;
-            final PhysicalCard cardToBeForfeited = result.getCardToBeForfeited();
-            if (GameConditions.canTarget(game, self, targetingReason, cardToBeForfeited)) {
-
-                final RequiredGameTextTriggerAction action = new RequiredGameTextTriggerAction(self, gameTextSourceCardId);
-                action.setPerformingPlayer(playerId);
-                action.setText("Place " + GameUtils.getFullName(cardToBeForfeited) + " in Used Pile");
-                // Choose target(s)
-                action.appendTargeting(
-                        new TargetCardOnTableEffect(action, playerId, "Target card to place in Used Pile instead of Lost Pile", targetingReason, cardToBeForfeited) {
-                            @Override
-                            protected void cardTargeted(final int targetGroupId, PhysicalCard cardTargeted) {
-                                action.addAnimationGroup(cardTargeted);
-                                // Allow response(s) - e.g. Turn It Off! Turn It Off!
-                                action.allowResponses("Place " + GameUtils.getCardLink(cardTargeted) + " in Used Pile when forfeited",
-                                        new RespondableEffect(action) {
-                                            @Override
-                                            protected void performActionResults(Action targetingAction) {
-                                                // Perform result(s)
-                                                result.getForfeitCardEffect().setForfeitToUsedPile();
+                                                if (effectResult instanceof AboutToForfeitCardFromTableResult) {
+                                                    ((AboutToForfeitCardFromTableResult) effectResult).getForfeitCardEffect().setForfeitToUsedPile();
+                                                } else {
+                                                    leaveResult.getPreventableCardEffect().preventEffectOnCard(finalTarget);
+                                                    action.appendEffect(
+                                                            new PlaceCardInUsedPileFromTableEffect(action, finalTarget));
+                                                }
                                             }
                                         }
                                 );
