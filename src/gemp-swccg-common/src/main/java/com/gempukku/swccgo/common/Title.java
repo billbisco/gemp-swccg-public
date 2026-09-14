@@ -1209,6 +1209,7 @@ public interface Title {
     String This_Is_Some_Rescue = "This Is Some Rescue!";
     String This_Is_Still_Wrong = "This Is Still Wrong";
     String This_Place_Can_Be_A_Little_Rough = "This Place Can Be A Little Rough";
+    String Through_The_Force_Things_You_Will_See = "Through The Force Things You Will See";
     String Those_Rebels_Wont_Escape_Us = "Those Rebels Won't Escape Us";
     String Thrawn = "Grand Admiral Thrawn";
     String Thrawns_Art_Collection = "Thrawn's Art Collection";
