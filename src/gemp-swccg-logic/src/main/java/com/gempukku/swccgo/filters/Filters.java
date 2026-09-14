@@ -17832,6 +17832,7 @@ public class Filters {
     public static final Filter AAT_Laser_Cannon = Filters.title(Title.AAT_Laser_Cannon);
     public static final Filter accountant = Filters.keyword(Keyword.ACCOUNTANT);
     public static final Filter Access_Denied = Filters.title(Title.Access_Denied);
+    public static final Filter Restricted_Access = Filters.title(Title.Restricted_Access);
     public static final Filter Ackbar = Filters.persona(Persona.ACKBAR);
     public static final Filter AhchTo_Jedi_Village = Filters.title(Title.AhchTo_Jedi_Village);
     public static final Filter AhchTo_Saddle = Filters.title(Title.Saddle);
