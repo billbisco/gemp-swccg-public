@@ -3,8 +3,10 @@ package com.gempukku.swccgo.logic;
 import com.gempukku.swccgo.common.CardCategory;
 import com.gempukku.swccgo.common.Title;
 import com.gempukku.swccgo.common.Zone;
+import com.gempukku.swccgo.filters.Filters;
 import com.gempukku.swccgo.game.PhysicalCard;
 import com.gempukku.swccgo.game.SwccgCardBlueprint;
+import com.gempukku.swccgo.game.state.GameState;
 
 import java.util.*;
 
@@ -282,6 +284,24 @@ public class GameUtils {
     }
 
     /**
+     * Cards that have this card as an explicit target (Utinni Effects, etc.).
+     * @param gameState the game state
+     * @param card the card that may be targeted
+     * @return unique cards currently in play whose targeting map contains the given card, excluding the card itself
+     */
+    public static List<PhysicalCard> getCardsTargeting(GameState gameState, PhysicalCard card) {
+        List<PhysicalCard> cardsTargeting = new LinkedList<PhysicalCard>();
+        for (PhysicalCard cardInPlay : Filters.filterAllOnTable(gameState.getGame(), Filters.any)) {
+            if (card.getPermanentCardId() != cardInPlay.getPermanentCardId()
+                    && cardInPlay.getTargetedCards(gameState).values().contains(card)
+                    && !cardsTargeting.contains(cardInPlay)) {
+                cardsTargeting.add(cardInPlay);
+            }
+        }
+        return cardsTargeting;
+    }
+
+    /**
      * Gets the top of card pile zone for the specified card pile zone, otherwise just the passed in zone is returned if
      * the passed in zone is not a card pile zone.
      * @param zone the card pile zone
@@ -293,6 +313,8 @@ public class GameUtils {
             zoneTop = Zone.TOP_OF_RESERVE_DECK;
         else if (zone == Zone.FORCE_PILE)
             zoneTop = Zone.TOP_OF_FORCE_PILE;
+        else if (zone == Zone.FROZEN_PILE)
+            zoneTop = Zone.TOP_OF_FROZEN_PILE;
         else if (zone == Zone.USED_PILE)
             zoneTop = Zone.TOP_OF_USED_PILE;
         else if (zone == Zone.LOST_PILE)
@@ -315,6 +337,8 @@ public class GameUtils {
             zone = Zone.RESERVE_DECK;
         else if (zoneTop == Zone.TOP_OF_FORCE_PILE)
             zone = Zone.FORCE_PILE;
+        else if (zoneTop == Zone.TOP_OF_FROZEN_PILE)
+            zone = Zone.FROZEN_PILE;
         else if (zoneTop == Zone.TOP_OF_USED_PILE)
             zone = Zone.USED_PILE;
         else if (zoneTop == Zone.TOP_OF_LOST_PILE)

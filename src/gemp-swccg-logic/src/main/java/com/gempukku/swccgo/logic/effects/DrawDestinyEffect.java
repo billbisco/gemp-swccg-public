@@ -21,6 +21,7 @@ import com.gempukku.swccgo.logic.actions.TriggerAction;
 import com.gempukku.swccgo.logic.decisions.ArbitraryCardsSelectionDecision;
 import com.gempukku.swccgo.logic.decisions.DecisionResultInvalidException;
 import com.gempukku.swccgo.logic.decisions.YesNoDecision;
+import com.gempukku.swccgo.logic.decisions.MultipleChoiceAwaitingDecision;
 import com.gempukku.swccgo.logic.modifiers.Modifier;
 import com.gempukku.swccgo.logic.modifiers.ModifierFlag;
 import com.gempukku.swccgo.logic.modifiers.ModifierType;
@@ -87,7 +88,9 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
     private List<Float> _drawXValuesToChooseFrom = new ArrayList<Float>();
     private int _chooseY;
     private boolean _takeOtherIntoHand;
+    private boolean _mayTakeOtherIntoHandOrReturnToTopOfReserve;
     private Map<String, Float> _modifierSourceTitleMap = new HashMap<>();
+    private boolean _combinedAttackHitCheckPlusOrMinusFolded;
 
     /**
      * Creates an effect that causes the player to draw a destiny.
@@ -434,6 +437,15 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
      * @param drawX the X value
      * @return true or false
      */
+
+    /**
+     * Sets whether unchosen destinies from draw X / choose Y may be taken into hand or returned to top of Reserve Deck.
+     * @param value true if the player chooses hand or top of Reserve Deck for each unchosen destiny
+     */
+    public void setMayTakeOtherIntoHandOrReturnToTopOfReserve(boolean value) {
+        _mayTakeOtherIntoHandOrReturnToTopOfReserve = value;
+    }
+
     public boolean canDrawAndChoose(SwccgGame game, int drawX) {
         if (isDrawAndChoose())
             return false;
@@ -501,6 +513,20 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
      * @return the total destiny
      */
     public Float getTotalDestiny(SwccgGame game) {
+        return getTotalDestiny(game, false);
+    }
+
+    /**
+     * Gets the total destiny.
+     * Combined Attack / Precise Attack skip TOTAL weapon destiny modifiers so each firing can show
+     * draws only. Pass true after an optional total-weapon-destiny response (Bossk With Mortar Gun -1)
+     * so the live re-log includes those modifiers.
+     * @param game the game
+     * @param includeTotalWeaponDestinyModifiersDuringCombinedFire true to include TOTAL_WEAPON_DESTINY
+     *        modifiers even during combined fire
+     * @return the total destiny
+     */
+    public Float getTotalDestiny(SwccgGame game, boolean includeTotalWeaponDestinyModifiersDuringCombinedFire) {
         if (_destinyDrawValues.isEmpty())
             return null;
 
@@ -517,6 +543,9 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
             // Combined Attack and Targeting Computer combined: draw modifiers stay on each draw.
             // TOTAL_WEAPON_DESTINY modifiers apply once to the grand total after all draws.
             boolean skipTotalMods = (ca != null) || (soc != null && soc.isCombined());
+            if (includeTotalWeaponDestinyModifiersDuringCombinedFire) {
+                skipTotalMods = false;
+            }
             if (!skipTotalMods) {
                 totalDestiny = game.getModifiersQuerying().getTotalWeaponDestiny(gameState, _performingPlayerId, totalDestiny);
             }
@@ -706,14 +735,11 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                 new PassthruEffect(subAction) {
                     @Override
                     protected void doPlayEffect(SwccgGame game) {
-                        // Final total
-                        Float totalDestiny = getTotalDestiny(game);
-
-                        gameState.endDrawDestiny();
-
                         CombinedAttackFiringState ca = gameState.getCombinedAttackFiringState();
                         if (ca != null
                                 && (_destinyType == DestinyType.WEAPON_DESTINY || _destinyType == DestinyType.EPIC_EVENT_AND_WEAPON_DESTINY)) {
+                            // Empty list = all draws failed or canceled. That is not destiny 0.
+                            boolean successfulDraw = !_destinyDrawValues.isEmpty();
                             float firingDestiny = 0f;
                             for (Float value : _destinyDrawValues) {
                                 if (value != null) {
@@ -724,26 +750,44 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                             PhysicalCard weapon = wfs != null ? wfs.getCardFiring() : null;
                             PhysicalCard cardFiring = wfs != null ? wfs.getCardFiringWeapon() : null;
                             com.gempukku.swccgo.game.SwccgBuiltInCardBlueprint perm = wfs != null ? wfs.getPermanentWeaponFiring() : null;
-                            // Draw modifiers are already in firingDestiny. Snapshot TOTAL_WEAPON_DESTINY
-                            // contributions so Combined Attack can apply same-title-once to the grand total.
+                            // Snapshot TOTAL mods before endDrawDestiny so optional until-end-of-draw-destiny
+                            // modifiers (Bossk With Mortar Gun -1) are still in the environment.
+                            // plusOrMinus is snapshotted even on a failed draw so a later successful draw
+                            // can still receive this weapon's titled +1 on a REAL grand total.
                             snapshotCombinedAttackTotalMods(game, gameState, ca, wfs, cardFiring, weapon, perm);
                             float variableX = weapon != null
                                     ? game.getModifiersQuerying().getVariableValue(gameState, weapon, Variable.X, 0f)
                                     : 0f;
-                            ca.addFiring(weapon, cardFiring, perm, firingDestiny, 0f, variableX, _drawDestinyEffect);
-                            gameState.sendMessage(ca.getFiringDrawsMessage(weapon, firingDestiny));
+                            Float recordedDestiny = successfulDraw ? firingDestiny : null;
+                            ca.addFiring(weapon, cardFiring, perm, recordedDestiny, 0f, variableX, _drawDestinyEffect);
+                            if (successfulDraw) {
+                                gameState.sendMessage(ca.getFiringDrawsMessage(weapon, firingDestiny));
+                            }
+                            else {
+                                gameState.sendMessage(ca.getFailedDrawMessage(weapon));
+                            }
+                            gameState.endDrawDestiny();
                             // Defer hit/lost/ionize until all Combined Attack weapons have fired (Gergall).
                             return;
                         }
 
+                        // Final total
+                        Float totalDestiny = getTotalDestiny(game);
+
+                        gameState.endDrawDestiny();
+
                         SeparatelyOrCombinedFiringState soc = gameState.getSeparatelyOrCombinedFiringState();
                         if (soc != null && soc.isCombined()
                                 && (_destinyType == DestinyType.WEAPON_DESTINY || _destinyType == DestinyType.EPIC_EVENT_AND_WEAPON_DESTINY)) {
-                            float firingDestiny = 0f;
-                            for (Float value : _destinyDrawValues) {
-                                if (value != null) {
-                                    firingDestiny += value;
+                            Float firingDestiny = null;
+                            if (!_destinyDrawValues.isEmpty()) {
+                                float sum = 0f;
+                                for (Float value : _destinyDrawValues) {
+                                    if (value != null) {
+                                        sum += value;
+                                    }
                                 }
+                                firingDestiny = sum;
                             }
                             soc.addFiringDestiny(firingDestiny);
                             soc.setDrawDestinyEffect(_drawDestinyEffect);
@@ -762,6 +806,12 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                                 return;
                             }
 
+                            if (!soc.hasSuccessfulFiringDestiny()) {
+                                totalDestiny = null;
+                                soc.markResolved();
+                                destinyDraws(game, _destinyCardDraws, _destinyDrawValues, totalDestiny);
+                                return;
+                            }
                             float combined = soc.getCombinedFiringDestinySum();
                             totalDestiny = game.getModifiersQuerying().getTotalWeaponDestiny(gameState, _performingPlayerId, combined);
                             soc.markResolved();
@@ -817,8 +867,10 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
 
     /**
      * Combined Attack snapshot of this firing's TOTAL_WEAPON_DESTINY modifiers, without Math.max(0, ...).
-     * Heavy Turbolaser Battery -1 vs capital / -6 otherwise must stay negative. Same title is collapsed
-     * once when Combined Attack builds the grand total (PR 1007 is not stacked on the Cumulative Rule engine).
+     * Must run before endDrawDestiny so optional until-end-of-draw-destiny TOTAL mods
+     * (Bossk With Mortar Gun -1) are still present. Heavy Turbolaser Battery -1 vs capital / -6
+     * otherwise must stay negative. Same title is collapsed once when Combined Attack builds
+     * the grand total (PR 1007 is not stacked on the Cumulative Rule engine).
      */
     private void snapshotCombinedAttackTotalMods(SwccgGame game, GameState gameState, CombinedAttackFiringState ca,
                                                  WeaponFiringState wfs, PhysicalCard cardFiring,
@@ -841,6 +893,35 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
             String title = source != null ? source.getTitle() : "";
             ca.addTotalModContribution(title, amount, modifier.isCumulative());
         }
+        // FireWeaponActionBuilder "destiny +1 > defense value" is plusOrMinus on the hit check,
+        // not TOTAL_WEAPON_DESTINY. Combined Attack / Precise Attack still treat it as a TOTAL
+        // modifier (same title once) on the grand total, then skip adding it again at apply.
+        float hitCheckPlus = getHitCheckPlusOrMinus();
+        if (hitCheckPlus != 0f) {
+            String hitTitle = "";
+            if (perm != null) {
+                String permTitle = perm.getTitle(game);
+                if (permTitle != null && !permTitle.isEmpty()) {
+                    hitTitle = permTitle;
+                }
+            }
+            if (hitTitle.isEmpty() && weapon != null && weapon.getTitle() != null) {
+                hitTitle = weapon.getTitle();
+            }
+            ca.addTotalModContribution(hitTitle, hitCheckPlus, false);
+            _combinedAttackHitCheckPlusOrMinusFolded = true;
+        }
+    }
+
+    /**
+     * Hit-check plusOrMinus from FireWeaponActionBuilder (for example Blaster Rifle "destiny +1 > defense value").
+     */
+    protected float getHitCheckPlusOrMinus() {
+        return 0f;
+    }
+
+    public boolean isCombinedAttackHitCheckPlusOrMinusFolded() {
+        return _combinedAttackHitCheckPlusOrMinusFolded;
     }
 
     /**
@@ -872,14 +953,20 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                         new SetInitialCalculationVariableModifier(weapon, weapon, variableX, Variable.X));
             }
         }
+        final AbstractAction originalAction = (_action instanceof AbstractAction) ? (AbstractAction) _action : null;
         boolean queued = false;
         try {
             destinyDraws(game, _destinyCardDraws, _destinyDrawValues, combinedTotal);
-            if (_action instanceof AbstractAction && applyToAction instanceof AbstractAction
+            if (originalAction != null && applyToAction instanceof AbstractAction
                     && _action != applyToAction) {
-                for (StandardEffect effect : ((AbstractAction) _action).drainPendingEffects()) {
+                for (StandardEffect effect : originalAction.drainPendingEffects()) {
                     applyToAction.appendEffect(effect);
                     queued = true;
+                }
+                if (queued) {
+                    // Nested appendEffect from destinyDraws callbacks (RefreshPrintedDestinyValues
+                    // then Bossk With Mortar Gun capture) must land on applyToAction.
+                    originalAction.setAppendEffectForwardTo(applyToAction);
                 }
             }
         }
@@ -890,11 +977,17 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                             new PassthruEffect(applyToAction) {
                                 @Override
                                 protected void doPlayEffect(SwccgGame game) {
+                                    if (originalAction != null) {
+                                        originalAction.setAppendEffectForwardTo(null);
+                                    }
                                     game.getGameState().finishWeaponFiring();
                                 }
                             });
                 }
                 else {
+                    if (originalAction != null) {
+                        originalAction.setAppendEffectForwardTo(null);
+                    }
                     gameState.finishWeaponFiring();
                 }
             }
@@ -1510,7 +1603,36 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                                                             }
                                                         }
 
-                                                        if (_takeOtherIntoHand) {
+                                                        if (_mayTakeOtherIntoHandOrReturnToTopOfReserve) {
+                                                            for (final PhysicalCard destinyCard : _drawXCardsToChooseFrom) {
+                                                                if (destinyCard != null && !selectedCards.contains(destinyCard)
+                                                                        && GameUtils.getZoneFromZoneTop(destinyCard.getZone()) == Zone.UNRESOLVED_DESTINY_DRAW) {
+                                                                    subAction.appendEffect(
+                                                                            new PlayoutDecisionEffect(subAction, _performingPlayerId,
+                                                                                    new MultipleChoiceAwaitingDecision("Choose destination for " + GameUtils.getCardLink(destinyCard),
+                                                                                            new String[]{"Take into hand", "Return to top of Reserve Deck"}) {
+                                                                                        @Override
+                                                                                        protected void validDecisionMade(int index, String result) {
+                                                                                            if (GameUtils.getZoneFromZoneTop(destinyCard.getZone()) != Zone.UNRESOLVED_DESTINY_DRAW) {
+                                                                                                return;
+                                                                                            }
+                                                                                            gameState.removeCardsFromZone(Collections.singleton(destinyCard));
+                                                                                            if (index == 0) {
+                                                                                                gameState.addCardToZone(destinyCard, Zone.HAND, _performingPlayerId);
+                                                                                                gameState.sendMessage(_performingPlayerId + " takes " + GameUtils.getCardLink(destinyCard) + " into hand");
+                                                                                            }
+                                                                                            else {
+                                                                                                gameState.addCardToTopOfZone(destinyCard, Zone.RESERVE_DECK, _performingPlayerId);
+                                                                                                gameState.sendMessage(_performingPlayerId + " returns " + GameUtils.getCardLink(destinyCard) + " to top of Reserve Deck");
+                                                                                            }
+                                                                                        }
+                                                                                    }
+                                                                            )
+                                                                    );
+                                                                }
+                                                            }
+                                                        }
+                                                        else if (_takeOtherIntoHand) {
                                                             subAction.appendEffect(
                                                                     new PassthruEffect(subAction) {
                                                                         @Override

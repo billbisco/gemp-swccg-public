@@ -32,6 +32,7 @@ public class BattleState implements Snapshotable<BattleState> {
     private boolean _isLocalTrouble;
     private boolean _isBesieged;
     private Set<PhysicalCard> _localTroubleParticipants = new HashSet<PhysicalCard>();
+    private Set<PhysicalCard> _besiegedParticipants = new HashSet<PhysicalCard>();
     private Set<PhysicalCard> _darkCardsParticipants = new HashSet<PhysicalCard>();
     private Set<PhysicalCard> _lightCardsParticipants = new HashSet<PhysicalCard>();
     private Set<PhysicalCard> _darkCardsParticipantsWhenResultDetermined = new HashSet<PhysicalCard>();
@@ -86,6 +87,9 @@ public class BattleState implements Snapshotable<BattleState> {
         snapshot._isBesieged = _isBesieged;
         for (PhysicalCard card : _localTroubleParticipants) {
             snapshot._localTroubleParticipants.add(snapshotData.getDataForSnapshot(card));
+        }
+        for (PhysicalCard card : _besiegedParticipants) {
+            snapshot._besiegedParticipants.add(snapshotData.getDataForSnapshot(card));
         }
         for (PhysicalCard card : _darkCardsParticipants) {
             snapshot._darkCardsParticipants.add(snapshotData.getDataForSnapshot(card));
@@ -150,10 +154,15 @@ public class BattleState implements Snapshotable<BattleState> {
     }
 
     public BattleState(SwccgGame game, String playerId, PhysicalCard location, boolean isLocalTrouble) {
+        this(game, playerId, location, isLocalTrouble, false);
+    }
+
+    public BattleState(SwccgGame game, String playerId, PhysicalCard location, boolean isLocalTrouble, boolean isBesieged) {
         _game = game;
         _playerInitiatedBattle = playerId;
         _location = location;
         _isLocalTrouble = isLocalTrouble;
+        _isBesieged = isBesieged;
     }
 
     public String getPlayerInitiatedBattle() {
@@ -242,6 +251,10 @@ public class BattleState implements Snapshotable<BattleState> {
         return true;
     }
 
+    public void setBesiegedParticipants(Collection<PhysicalCard> cards) {
+        _besiegedParticipants.addAll(cards);
+    }
+
     public void addParticipant(GameState gameState, PhysicalCard card) {
         if (card.getOwner().equals(gameState.getDarkPlayer()))
             _darkCardsParticipants.add(card);
@@ -297,6 +310,8 @@ public class BattleState implements Snapshotable<BattleState> {
         Collection<PhysicalCard> currentParticipants;
         if (_isLocalTrouble)
             currentParticipants = Filters.filterActive(game, null, Filters.and(Filters.canParticipateInBattleAt(_location, _playerInitiatedBattle), Filters.in(_localTroubleParticipants)));
+        else if (_isBesieged)
+            currentParticipants = Filters.filterAllOnTable(game, Filters.in(_besiegedParticipants));
         else
             currentParticipants = Filters.filterActive(game, null, Filters.canParticipateInBattleAt(_location, _playerInitiatedBattle));
 
@@ -368,6 +383,20 @@ public class BattleState implements Snapshotable<BattleState> {
 
         if (isReachedDamageSegment())
             return true;
+
+        if (_isBesieged) {
+            boolean dsHasCharacter = false;
+            boolean lsHasCharacter = false;
+            for (PhysicalCard card : _darkCardsParticipants) {
+                if (card.getBlueprint().getCardCategory() == CardCategory.CHARACTER)
+                    dsHasCharacter = true;
+            }
+            for (PhysicalCard card : _lightCardsParticipants) {
+                if (card.getBlueprint().getCardCategory() == CardCategory.CHARACTER)
+                    lsHasCharacter = true;
+            }
+            return dsHasCharacter && lsHasCharacter;
+        }
 
         boolean foundMayInitiateBattle = Filters.canSpot(game, null, Filters.and(Filters.owner(_playerInitiatedBattle), Filters.mayInitiateBattle, Filters.canParticipateInBattleAt(_location, _playerInitiatedBattle)));
         boolean foundMayBeBattled = Filters.canSpot(game, null, Filters.and(Filters.owner(game.getOpponent(_playerInitiatedBattle)), Filters.mayBeBattled, Filters.canParticipateInBattleAt(_location, _playerInitiatedBattle)));
@@ -724,8 +753,11 @@ public class BattleState implements Snapshotable<BattleState> {
     }
 
     public float getAttritionTotal(SwccgGame game, String player) {
-        if (_reachedDamageSegment)
-            return _totalAttrition.get(player);
+        if (_reachedDamageSegment) {
+            // Null-safe: end-of-battle forfeit effects can run after totals are cleared
+            Float attrition = _totalAttrition.get(player);
+            return attrition == null ? 0 : attrition;
+        }
 
         if (_baseAttrition.get(player) == null)
             return 0;

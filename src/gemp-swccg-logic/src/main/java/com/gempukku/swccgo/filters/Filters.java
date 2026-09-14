@@ -46,6 +46,7 @@ import com.gempukku.swccgo.logic.GameUtils;
 import com.gempukku.swccgo.logic.actions.PlayCardAction;
 import com.gempukku.swccgo.logic.effects.RespondableWeaponFiringEffect;
 import com.gempukku.swccgo.logic.modifiers.ModifyGameTextType;
+import com.gempukku.swccgo.logic.modifiers.MouseDroidUtinniCarry;
 import com.gempukku.swccgo.logic.modifiers.querying.ModifiersQuerying;
 import com.gempukku.swccgo.logic.timing.Action;
 import com.gempukku.swccgo.logic.timing.Effect;
@@ -5058,9 +5059,9 @@ public class Filters {
             @Override
             public boolean accepts(GameState gameState, ModifiersQuerying modifiersQuerying, PhysicalCard physicalCard) {
                 PhysicalCard card = gameState.findCardByPermanentId(permCardId);
-                PhysicalCard attachedTo = card.getAttachedTo();
-                return attachedTo != null
-                        && Filters.sameCardId(attachedTo).accepts(gameState, modifiersQuerying, physicalCard);
+                // Mouse carry: Utinni modifiers that key off host apply to hunted targets, not the mouse.
+                // Reversible via MouseDroidUtinniCarry.
+                return MouseDroidUtinniCarry.acceptsAsEffectHost(gameState, modifiersQuerying, card, physicalCard);
             }
         };
     }
@@ -6495,9 +6496,9 @@ public class Filters {
                     return false;
                 }
 
-                // 5) If starship, check that it is piloted and has astromech or nav computer aboard
+                // 5) If starship, check that it is piloted (or MayPilotWithAstromech) and has astromech or nav computer aboard
                 if (cardToMove.getBlueprint().getCardCategory() == CardCategory.STARSHIP
-                        && (!modifiersQuerying.isPiloted(gameState, cardToMove, false)
+                        && (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)
                         || !modifiersQuerying.hasAstromechOrNavComputer(gameState, cardToMove))) {
                     return false;
                 }
@@ -6574,7 +6575,7 @@ public class Filters {
 
                 // 4) Check that starship is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -6688,7 +6689,7 @@ public class Filters {
 
                 // 7) Check that it is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -6804,7 +6805,7 @@ public class Filters {
 
                 // 3) Check that it is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -6900,7 +6901,7 @@ public class Filters {
 
                 // 3) Check that it is piloted
                 if (cardToMove.getBlueprint().getCardCategory() != CardCategory.CREATURE
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, true)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, true)) {
                     return false;
                 }
 
@@ -6947,8 +6948,8 @@ public class Filters {
                     return false;
                 }
 
-                // 4) Check that it is piloted
-                if (!modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                // 4) Check that it is piloted (or MayPilotWithAstromech)
+                if (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -7010,8 +7011,8 @@ public class Filters {
                     return false;
                 }
 
-                // 4) Check that it is piloted
-                if (!modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                // 4) Check that it is piloted (or MayPilotWithAstromech)
+                if (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -7098,8 +7099,8 @@ public class Filters {
                     return false;
                 }
 
-                // 3) Check that it is piloted
-                if (!modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                // 3) Check that it is piloted (or MayPilotWithAstromech)
+                if (!modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -7741,7 +7742,7 @@ public class Filters {
 
                 if ((cardToMove.getBlueprint().getCardCategory() == CardCategory.STARSHIP
                         || cardToMove.getBlueprint().getCardCategory() == CardCategory.VEHICLE)
-                        && !modifiersQuerying.isPiloted(gameState, cardToMove, false)) {
+                        && !modifiersQuerying.isPilotedOrMayPilotWithAstromech(gameState, cardToMove, false)) {
                     return false;
                 }
 
@@ -10146,6 +10147,23 @@ public class Filters {
      */
     private static Filter mayFireRepeatedly() {
         return mayFireRepeatedly;
+    }
+
+    /**
+     * Filter that accepts weapons that may fire repeatedly at the same target (e.g. granted by Lieutenant Greeve).
+     * Distinct from {@link #mayFireRepeatedly}; uses ModifierType.MAY_FIRE_REPEATEDLY_AT_SAME_TARGET_FOR_COST.
+     */
+    public static final Filter mayFireRepeatedlyAtSameTarget = new Filter() {
+        @Override
+        public boolean accepts(GameState gameState, ModifiersQuerying modifiersQuerying, PhysicalCard physicalCard) {
+            return modifiersQuerying.mayFireWeaponRepeatedlyAtSameTarget(gameState, physicalCard);
+        }
+    };
+    /**
+     * Wrapper method to allow other static filters to access the wrapped filter.
+     */
+    private static Filter mayFireRepeatedlyAtSameTarget() {
+        return mayFireRepeatedlyAtSameTarget;
     }
 
 
@@ -12659,6 +12677,30 @@ public class Filters {
 
                 PhysicalCard targetedCard = card.getTargetedCard(gameState, targetId);
                 return targetedCard != null && Filters.samePermanentCardId(physicalCard).accepts(gameState, modifiersQuerying, targetedCard);
+            }
+        };
+    }
+
+    /**
+     * Filter that accepts cards deployed "between" two sites (attached to one site and targeting the other via
+     * TargetId.EFFECT_TARGET_1) where either bounding site is accepted by the site filter.
+     * Used so between-sites devices (e.g. Laser Gate) can be weapon-targeted from either bounding site.
+     *
+     * @param siteFilter filter for one of the bounding sites
+     * @return Filter
+     */
+    public static Filter deployedBetweenSitesIncluding(final Filterable siteFilter) {
+        final Filter filterToCheck = Filters.and(siteFilter);
+        return new Filter() {
+            @Override
+            public boolean accepts(GameState gameState, ModifiersQuerying modifiersQuerying, PhysicalCard physicalCard) {
+                PhysicalCard attachedTo = physicalCard.getAttachedTo();
+                PhysicalCard otherSite = physicalCard.getTargetedCard(gameState, TargetId.EFFECT_TARGET_1);
+                if (attachedTo == null || otherSite == null) {
+                    return false;
+                }
+                return filterToCheck.accepts(gameState, modifiersQuerying, attachedTo)
+                        || filterToCheck.accepts(gameState, modifiersQuerying, otherSite);
             }
         };
     }
@@ -17806,6 +17848,8 @@ public class Filters {
     public static final Filter AAT = Filters.modelType(ModelType.AAT);
     public static final Filter AAT_Laser_Cannon = Filters.title(Title.AAT_Laser_Cannon);
     public static final Filter accountant = Filters.keyword(Keyword.ACCOUNTANT);
+    public static final Filter Access_Denied = Filters.title(Title.Access_Denied);
+    public static final Filter Restricted_Access = Filters.title(Title.Restricted_Access);
     public static final Filter Ackbar = Filters.persona(Persona.ACKBAR);
     public static final Filter AhchTo_Jedi_Village = Filters.title(Title.AhchTo_Jedi_Village);
     public static final Filter AhchTo_Saddle = Filters.title(Title.Saddle);
@@ -17834,6 +17878,7 @@ public class Filters {
     public static final Filter Allegations_Of_Corruption = Filters.title(Title.Allegations_Of_Corruption);
     public static final Filter Alter = Filters.title(Title.Alter);
     public static final Filter Alternatives_To_Fighting = Filters.title(Title.Alternatives_To_Fighting);
+    public static final Filter Armament_Dismantled = Filters.title(Title.Armament_Dismantled);
     public static final Filter always_immune_to_Alter = Filters.alwaysImmuneToCardTitle(Title.Alter);
     public static final Filter Always_Thinking_With_Your_Stomach = Filters.title(Title.Always_Thinking_With_Your_Stomach);
     public static final Filter Always_Two_There_Are = Filters.title(Title.Always_Two_There_Are);
@@ -18075,6 +18120,7 @@ public class Filters {
     public static final Filter Close_Call = Filters.title(Title.Close_Call);
     public static final Filter Cody = Filters.title(Title.Cody);
     public static final Filter Collision = Filters.title(Title.Collision);
+    public static final Filter Corrosive_Damage = Filters.title(Title.Corrosive_Damage);
     public static final Filter Colo_Claw_Fish = Filters.title(Title.Colo_Claw_Fish);
     public static final Filter Combat_Readiness = Filters.title(Title.Combat_Readiness);
     public static final Filter Combat_Response = Filters.title(Title.Combat_Response);
@@ -18228,6 +18274,7 @@ public class Filters {
     public static final Filter Deploys_at_Yavin_4 = Filters.or(Filters.placeToBePresentOnPlanet(Title.Yavin_4), Filters.locationAndCardsAtLocation(Filters.title(Title.Yavin_4)));
     public static final Filter Deploys_on_Yavin_4 = Filters.placeToBePresentOnPlanet(Title.Yavin_4);
     public static final Filter Derlin = Filters.title(Title.Derlin);
+    public static final Filter Descent_Into_The_Dark = Filters.title(Title.Descent_Into_The_Dark);
     public static final Filter desert = Filters.keyword(Keyword.DESERT);
     public static final Filter Desert_Heart = Filters.title(Title.Desert_Heart);
     public static final Filter Desert_Landing_Site = Filters.title(Title.Desert_Landing_Site);
@@ -18248,6 +18295,7 @@ public class Filters {
     public static final Filter Din = Filters.persona(Persona.DIN);
     public static final Filter Dining_Room = Filters.title(Title.Dining_Room);
     public static final Filter Diplomatic_Mission_To_Alderaan = Filters.title(Title.Diplomatic_Mission_To_Alderaan);
+    public static final Filter Disarming_Creature = Filters.title(Title.Disarming_Creature);
     public static final Filter disarmed_character = Filters.and(CardCategory.CHARACTER, Filters.Disarmed());
     public static final Filter disarming_card = Filters.keyword(Keyword.DISARMING_CARD);
     public static final Filter DJ = Filters.persona(Persona.DJ);
@@ -18535,6 +18583,7 @@ public class Filters {
     public static final Filter Hunt_Down_And_Destroy_The_Jedi = Filters.title(Title.Hunt_Down_And_Destroy_The_Jedi);
     public static final Filter Hunt_For_The_Droid_General = Filters.title(Title.Hunt_For_The_Droid_General);
     public static final Filter hut = Filters.and(CardSubtype.SITE, Filters.titleContains("Hut"));
+    public static final Filter Hoover = Filters.species(Species.HOOVER);
     public static final Filter Hutt = Filters.species(Species.HUTT);
     public static final Filter Hutt_Bounty = Filters.title(Title.Hutt_Bounty);
     public static final Filter Hutt_Influence = Filters.title(Title.Hutt_Influence);
@@ -18577,6 +18626,7 @@ public class Filters {
     public static final Filter Imperial_Arrest_Order = Filters.title(Title.Imperial_Arrest_Order);
     public static final Filter Imperial_Artillery = Filters.title(Title.Imperial_Artillery);
     public static final Filter Imperial_Atrocity = Filters.title(Title.Imperial_Atrocity);
+    public static final Filter Impressive_Most_Impressive = Filters.title(Title.Impressive_Most_Impressive);
     public static final Filter Imperial_Barrier = Filters.title(Title.Imperial_Barrier);
     public static final Filter Imperial_City = Filters.title(Title.Imperial_City);
     public static final Filter Imperial_class_Star_Destroyer = Filters.modelType(ModelType.IMPERIAL_CLASS_STAR_DESTROYER);
@@ -19133,6 +19183,7 @@ public class Filters {
     public static final Filter Republic_character = Filters.and(Filters.icon(Icon.REPUBLIC), CardCategory.CHARACTER);
     public static final Filter Republic_starship = Filters.and(Filters.icon(Icon.REPUBLIC), CardCategory.STARSHIP);
     public static final Filter Res_Luk_Raauf = Filters.title(Title.Res_Luk_Raauf);
+    public static final Filter Rescue_In_The_Clouds = Filters.title(Title.Rescue_In_The_Clouds);
     public static final Filter Rescue_The_Princess = Filters.title(Title.Rescue_The_Princess);
     public static final Filter Resistance = Filters.title(Title.Resistance);
     public static final Filter resistance = Filters.icon(Icon.RESISTANCE);
@@ -19239,6 +19290,7 @@ public class Filters {
     public static final Filter Senate_Hovercam = Filters.title(Title.Senate_Hovercam);
     public static final Filter senator = Filters.keyword(Keyword.SENATOR);
     public static final Filter Sense = Filters.title(Title.Sense);
+    public static final Filter Sensor_Panel = Filters.title(Title.Sensor_Panel);
     public static final Filter Separatist_Command_Center = Filters.title(Title.Separatist_Command_Center);
     public static final Filter Set_For_Stun = Filters.title(Title.Set_For_Stun);
     public static final Filter Set_Your_Course_For_Alderaan = Filters.title(Title.Set_Your_Course_For_Alderaan);
@@ -19461,6 +19513,8 @@ public class Filters {
     public static final Filter They_Have_No_Idea_Were_Coming = Filters.title(Title.They_Have_No_Idea_Were_Coming);
     public static final Filter Theyre_On_Dantooine = Filters.title(Title.Theyre_On_Dantooine);
     public static final Filter Theyve_Shut_Down_The_Main_Reactor = Filters.title(Title.Theyve_Shut_Down_The_Main_Reactor);
+    public static final Filter Theyd_Be_Crazy_To_Follow_Us = Filters.title(Title.Theyd_Be_Crazy_To_Follow_Us);
+    public static final Filter Tight_Squeeze = Filters.title(Title.Tight_Squeeze);
     public static final Filter thief = Filters.keyword(Keyword.THIEF);
     public static final Filter Third_Marker = Filters.keyword(Keyword.MARKER_3);
     public static final Filter They_Will_Be_Lost_And_Confused = Filters.title(Title.They_Will_Be_Lost_And_Confused);
@@ -19470,6 +19524,7 @@ public class Filters {
     public static final Filter This_Is_All_Your_Fault = Filters.title(Title.This_Is_All_Your_Fault);
     public static final Filter This_Is_Just_Wrong = Filters.title(Title.This_Is_Just_Wrong);
     public static final Filter This_Is_More_Like_It = Filters.title(Title.This_Is_More_Like_It);
+    public static final Filter This_Is_No_Cave = Filters.title(Title.This_Is_No_Cave);
     public static final Filter This_Is_Some_Rescue = Filters.title(Title.This_Is_Some_Rescue);
     public static final Filter This_Is_Still_Wrong = Filters.title(Title.This_Is_Still_Wrong);
     public static final Filter This_Place_Can_Be_A_Little_Rough = Filters.title(Title.This_Place_Can_Be_A_Little_Rough);
@@ -19490,6 +19545,7 @@ public class Filters {
     public static final Filter TIE_ln = Filters.modelType(ModelType.TIE_LN);
     public static final Filter TIE_rc = Filters.modelType(ModelType.TIE_RC);
     public static final Filter TIE_sa = Filters.modelType(ModelType.TIE_SA);
+    public static final Filter TIE_Sentry_Ships = Filters.title(Title.TIE_Sentry_Ships);
     public static final Filter TIE_sr = Filters.modelType(ModelType.TIE_SR);
     public static final Filter TIE_vn = Filters.modelType(ModelType.TIE_VN);
     public static final Filter Tigran = Filters.persona(Persona.TIGRAN);
@@ -19505,6 +19561,7 @@ public class Filters {
     public static final Filter trade_agenda = Filters.agenda(Agenda.TRADE);
     public static final Filter Trade_Federation_starfighter = Filters.and(Icon.TRADE_FEDERATION, CardSubtype.STARFIGHTER);
     public static final Filter Trample = Filters.title(Title.Trample);
+    public static final Filter Turn_It_Off_Turn_It_Off = Filters.title(Title.Turn_It_Off_Turn_It_Off);
     public static final Filter Trandoshan = Filters.species(Species.TRANDOSHAN);
     public static final Filter transport = Filters.and(CardType.STARSHIP, Filters.or(Keyword.TRANSPORT_SHIP, ModelType.BYBLOS_G1A_TRANSPORT, ModelType.KOMRK_CLASS_FIGHTER_TRANSPORT, ModelType.MODIFIED_TRANSPORT, ModelType.OUBLIETTE_CLASS_TRANSPORT, ModelType.RESISTANCE_TRANSPORT, ModelType.TRANSPORT, ModelType.WTK_85A_INTERSTELLAR_TRANSPORT, ModelType.ZETA_CLASS_TRANSPORT, ModelType.Y_45_ARMORED_TRANSPORT));
     public static final Filter transport_vehicle = Filters.and(CardType.VEHICLE, CardSubtype.TRANSPORT);

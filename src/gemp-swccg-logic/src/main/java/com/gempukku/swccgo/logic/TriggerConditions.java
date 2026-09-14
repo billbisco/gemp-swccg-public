@@ -1882,6 +1882,23 @@ public class TriggerConditions {
     }
 
     /**
+     * Determines if the specified player just peeked at opponent's hand using Radar Scanner.
+     * Sensor Panel uses this so it can respond during Radar Scanner without a second look at the hand.
+     * @param game the game
+     * @param effectResult the effect result
+     * @param playerId the player who peeked
+     * @return true or false
+     */
+    public static boolean justPeekedAtOpponentsHandUsingRadarScanner(SwccgGame game, EffectResult effectResult, String playerId) {
+        if (effectResult.getType() == EffectResult.Type.PEEKED_AT_OPPONENTS_HAND) {
+            PeekedAtOpponentsHandResult result = (PeekedAtOpponentsHandResult) effectResult;
+            return playerId.equals(result.getPerformingPlayerId())
+                    && result.getSource() != null
+                    && Filters.Radar_Scanner.accepts(game, result.getSource());
+        }
+        return false;
+    }
+    /**
      * Determines if the specified player is about to look at opponents hand by using a card accepted by the card filter.
      * @param game the game
      * @param effect the effect
@@ -2756,6 +2773,8 @@ public class TriggerConditions {
 
     /**
      * Determines if a card accepted by the filter is about to 'hide' from battle.
+     * Covers in-battle {@code HideFromBattleEffect} and shared hide-until-end-of-turn
+     * (e.g. Impressive, Most Impressive) so Nice Of You Guys To Drop By can cancel either.
      * @param game the game
      * @param effectResult the effect result
      * @param filter the filter
@@ -2765,10 +2784,8 @@ public class TriggerConditions {
         if (effectResult.getType() == EffectResult.Type.ABOUT_TO_HIDE_FROM_BATTLE) {
             AboutToHideFromBattleResult aboutToHideFromBattleResult = (AboutToHideFromBattleResult) effectResult;
             PhysicalCard card = aboutToHideFromBattleResult.getCardToHideFromBattle();
-            BattleState battleState = game.getGameState().getBattleState();
 
-            return battleState != null && battleState.isCardParticipatingInBattle(card)
-                    && !aboutToHideFromBattleResult.getPreventableCardEffect().isEffectOnCardPrevented(card)
+            return !aboutToHideFromBattleResult.getPreventableCardEffect().isEffectOnCardPrevented(card)
                     && Filters.and(filter).accepts(game.getGameState(), game.getModifiersQuerying(), card);
         }
         return false;
