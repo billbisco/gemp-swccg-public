@@ -9,6 +9,7 @@ import com.gempukku.swccgo.game.ActionsEnvironment;
 import com.gempukku.swccgo.game.PhysicalCard;
 import com.gempukku.swccgo.game.SwccgBuiltInCardBlueprint;
 import com.gempukku.swccgo.game.SwccgGame;
+import com.gempukku.swccgo.game.state.CombinedAttackFiringState;
 import com.gempukku.swccgo.game.state.DrawDestinyState;
 import com.gempukku.swccgo.game.state.GameState;
 import com.gempukku.swccgo.game.state.SeparatelyOrCombinedFiringState;
@@ -22,6 +23,7 @@ import com.gempukku.swccgo.logic.decisions.DecisionResultInvalidException;
 import com.gempukku.swccgo.logic.decisions.YesNoDecision;
 import com.gempukku.swccgo.logic.modifiers.Modifier;
 import com.gempukku.swccgo.logic.modifiers.ModifierFlag;
+import com.gempukku.swccgo.logic.modifiers.ModifierType;
 import com.gempukku.swccgo.logic.modifiers.SetInitialCalculationVariableModifier;
 import com.gempukku.swccgo.logic.modifiers.querying.ModifiersEnvironment;
 import com.gempukku.swccgo.logic.modifiers.querying.ModifiersQuerying;
@@ -511,8 +513,11 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
         // Add modifiers to total weapon destiny (unless this is combined firing)
         if (_destinyType==DestinyType.WEAPON_DESTINY || _destinyType==DestinyType.EPIC_EVENT_AND_WEAPON_DESTINY) {
             SeparatelyOrCombinedFiringState soc = gameState.getSeparatelyOrCombinedFiringState();
-            // TC-combined: each firing is draw modifiers only, not a weapon destiny total.
-            if (soc == null || !soc.isCombined()) {
+            CombinedAttackFiringState ca = gameState.getCombinedAttackFiringState();
+            // Combined Attack and Targeting Computer combined: draw modifiers stay on each draw.
+            // TOTAL_WEAPON_DESTINY modifiers apply once to the grand total after all draws.
+            boolean skipTotalMods = (ca != null) || (soc != null && soc.isCombined());
+            if (!skipTotalMods) {
                 totalDestiny = game.getModifiersQuerying().getTotalWeaponDestiny(gameState, _performingPlayerId, totalDestiny);
             }
         }
@@ -706,6 +711,31 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
 
                         gameState.endDrawDestiny();
 
+                        CombinedAttackFiringState ca = gameState.getCombinedAttackFiringState();
+                        if (ca != null
+                                && (_destinyType == DestinyType.WEAPON_DESTINY || _destinyType == DestinyType.EPIC_EVENT_AND_WEAPON_DESTINY)) {
+                            float firingDestiny = 0f;
+                            for (Float value : _destinyDrawValues) {
+                                if (value != null) {
+                                    firingDestiny += value;
+                                }
+                            }
+                            com.gempukku.swccgo.game.state.WeaponFiringState wfs = gameState.getWeaponFiringState();
+                            PhysicalCard weapon = wfs != null ? wfs.getCardFiring() : null;
+                            PhysicalCard cardFiring = wfs != null ? wfs.getCardFiringWeapon() : null;
+                            com.gempukku.swccgo.game.SwccgBuiltInCardBlueprint perm = wfs != null ? wfs.getPermanentWeaponFiring() : null;
+                            // Draw modifiers are already in firingDestiny. Snapshot TOTAL_WEAPON_DESTINY
+                            // contributions so Combined Attack can apply same-title-once to the grand total.
+                            snapshotCombinedAttackTotalMods(game, gameState, ca, wfs, cardFiring, weapon, perm);
+                            float variableX = weapon != null
+                                    ? game.getModifiersQuerying().getVariableValue(gameState, weapon, Variable.X, 0f)
+                                    : 0f;
+                            ca.addFiring(weapon, cardFiring, perm, firingDestiny, 0f, variableX, _drawDestinyEffect);
+                            gameState.sendMessage(ca.getFiringDrawsMessage(weapon, firingDestiny));
+                            // Defer hit/lost/ionize until all Combined Attack weapons have fired (Gergall).
+                            return;
+                        }
+
                         SeparatelyOrCombinedFiringState soc = gameState.getSeparatelyOrCombinedFiringState();
                         if (soc != null && soc.isCombined()
                                 && (_destinyType == DestinyType.WEAPON_DESTINY || _destinyType == DestinyType.EPIC_EVENT_AND_WEAPON_DESTINY)) {
@@ -786,7 +816,35 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
     protected abstract void destinyDraws(SwccgGame game, List<PhysicalCard> destinyCardDraws, List<Float> destinyDrawValues, Float totalDestiny);
 
     /**
-     * After unpaid TC-combined destinies are collected, run this firing's
+     * Combined Attack snapshot of this firing's TOTAL_WEAPON_DESTINY modifiers, without Math.max(0, ...).
+     * Heavy Turbolaser Battery -1 vs capital / -6 otherwise must stay negative. Same title is collapsed
+     * once when Combined Attack builds the grand total (PR 1007 is not stacked on the Cumulative Rule engine).
+     */
+    private void snapshotCombinedAttackTotalMods(SwccgGame game, GameState gameState, CombinedAttackFiringState ca,
+                                                 WeaponFiringState wfs, PhysicalCard cardFiring,
+                                                 PhysicalCard weapon, SwccgBuiltInCardBlueprint perm) {
+        if (ca == null || wfs == null) {
+            return;
+        }
+        PhysicalCard firer = cardFiring;
+        if (weapon != null && weapon.getAttachedTo() != null
+                && (firer == null || firer.getCardId() == weapon.getCardId())) {
+            firer = weapon.getAttachedTo();
+        }
+        for (Modifier modifier : game.getModifiersQuerying().getModifiers(gameState, ModifierType.TOTAL_WEAPON_DESTINY)) {
+            float amount = modifier.getTotalWeaponDestinyModifier(gameState, game.getModifiersQuerying(),
+                    firer, weapon, perm, wfs.getTargets());
+            if (amount == 0f) {
+                continue;
+            }
+            PhysicalCard source = modifier.getSource(gameState);
+            String title = source != null ? source.getTitle() : "";
+            ca.addTotalModContribution(title, amount, modifier.isCumulative());
+        }
+    }
+
+    /**
+     * After Combined Attack / unpaid TC-combined destinies are collected, run this firing's
      * weapon-specific destinyDraws (hit, lost if X=3, ionize, etc.) against the combined total.
      * Restores Variable X and a short-lived WeaponFiringState because those last only until
      * the original fire action ended. Result effects are moved onto applyToAction.
@@ -1529,6 +1587,8 @@ public abstract class DrawDestinyEffect extends AbstractSubActionEffect {
                                         && (_destinyType == DestinyType.WEAPON_DESTINY || _destinyType == DestinyType.EPIC_EVENT_AND_WEAPON_DESTINY)) {
                                     totalMsg = soc.getFiringLabel() + ": " + totalMsg;
                                 }
+                                // Combined Attack / Targeting Computer combined skip total mods in getTotalDestiny,
+                                // so this line is draws only. Targeting Computer firing 1/2 still prefixes the line.
                                 gameState.sendMessage(totalMsg);
                             }
 
