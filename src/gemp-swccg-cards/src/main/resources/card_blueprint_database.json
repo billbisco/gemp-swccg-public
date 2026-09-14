@@ -29700,6 +29700,38 @@
     "species": "HNEMTHE"
   },
   {
+    "cardId": "1_188",
+    "title": "MSE-6 'Mouse' Droid",
+    "slug": "mse-6-mouse-droid",
+    "slugWithSetName": "mse-6-mouse-droid-premiere",
+    "side": "DARK",
+    "uniqueness": "UNRESTRICTED",
+    "expansionSet": "PREMIERE",
+    "rarity": "U1",
+    "cardCategory": "CHARACTER",
+    "cardTypes": [
+      "DROID"
+    ],
+    "lore": "Nicknamed for rodent-like appearance. Delivers orders and sensitive documents. Retractable manipulator arms. Made by Rebaxan Colmuni. Easily frightened.",
+    "gameText": "Landspeed = 3. Deploys to same site as a character targeted by a Utinni Effect (except Kessel Run). If this droid 'reaches' Utinni Effect, may relocate it here. Upon delivery, 'mouse' droid returns to your hand.",
+    "deployCost": 0,
+    "destiny": 0,
+    "power": 0,
+    "ability": 0,
+    "forfeit": 0,
+    "landspeed": 3,
+    "politics": 0,
+    "icons": [
+      {
+        "icon": "DROID",
+        "count": 1
+      }
+    ],
+    "modelTypes": [
+      "MESSENGER"
+    ]
+  },
+  {
     "cardId": "1_189",
     "title": "Myo",
     "slug": "myo",
@@ -84226,6 +84258,36 @@
     ]
   },
   {
+    "cardId": "2_113",
+    "title": "Laser Gate",
+    "slug": "laser-gate",
+    "slugWithSetName": "laser-gate-a-new-hope",
+    "side": "DARK",
+    "uniqueness": "RESTRICTED_2",
+    "expansionSet": "A_NEW_HOPE",
+    "rarity": "U2",
+    "cardCategory": "DEVICE",
+    "cardTypes": [
+      "DEVICE"
+    ],
+    "lore": "Security corridors are guarded by a grid of laser emplacements which can be activated upon demand to seal off sensitive areas from intrusion.",
+    "gameText": "Deploy between any two interior mobile sites. To pass, a character must have (power + ability) > 4 or use a Lift Tube (all other vehicles are blocked). Laser Gate defense value = 3; may be targeted (as if a character) by a character weapon from either site.",
+    "destiny": 4,
+    "icons": [
+      {
+        "icon": "A_NEW_HOPE",
+        "count": 1
+      },
+      {
+        "icon": "DEVICE",
+        "count": 1
+      }
+    ],
+    "keywords": [
+      "DEPLOYS_ON_SITE"
+    ]
+  },
+  {
     "cardId": "2_114",
     "title": "Magnetic Suction Tube",
     "slug": "magnetic-suction-tube",
@@ -84299,6 +84361,34 @@
     "lore": "Imperial pilots often target astromech aboard Rebel starfighters in an attempt to prevent hyper-escapes. Scarcity of undamaged astromechs can delay starfighter deployment.",
     "gameText": "Use 3 Force to deploy on opponent's side of table. All opponent's starships with a [Nav Computer] icon are deploy +1.",
     "destiny": 3,
+    "icons": [
+      {
+        "icon": "A_NEW_HOPE",
+        "count": 1
+      },
+      {
+        "icon": "EFFECT",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "cardId": "2_117",
+    "title": "Besieged",
+    "slug": "besieged",
+    "slugWithSetName": "besieged-a-new-hope",
+    "side": "DARK",
+    "uniqueness": "UNRESTRICTED",
+    "expansionSet": "A_NEW_HOPE",
+    "rarity": "R2",
+    "cardCategory": "EFFECT",
+    "cardTypes": [
+      "EFFECT"
+    ],
+    "cardSubtype": "NORMAL",
+    "lore": "Stormtroopers blasted through the main airlock of the Tantive IV. The Rebel soldiers' attempt to defend the intrusion was no match for the Empire's superior firepower.",
+    "gameText": "Deploy on a captured starship. Your characters present with captured starship may battle opponent's characters aboard it (as if present together at a site). Effect canceled if starship escapes or is stolen.",
+    "destiny": 5,
     "icons": [
       {
         "icon": "A_NEW_HOPE",
@@ -84954,6 +85044,35 @@
       }
     ]
   },
+    {
+    "cardId": "2_138",
+    "title": "Retract The Bridge",
+    "slug": "retract-the-bridge",
+    "slugWithSetName": "retract-the-bridge-a-new-hope",
+    "side": "DARK",
+    "uniqueness": "UNRESTRICTED",
+    "expansionSet": "A_NEW_HOPE",
+    "rarity": "R1",
+    "cardCategory": "INTERRUPT",
+    "cardTypes": [
+      "INTERRUPT"
+    ],
+    "cardSubtype": "LOST",
+    "lore": "Strategically retracted bridges can frustrate enemy movement, forcing routing plans to be rearranged.",
+    "gameText": "During your deploy phase, use X Force to rearrange all interior Death Star sites, where X = total number of those sites. All cards at a given site move along with that site. OR Cancel On The Edge.",
+    "destiny": 3,
+    "icons": [
+      {
+        "icon": "A_NEW_HOPE",
+        "count": 1
+      },
+      {
+        "icon": "INTERRUPT",
+        "count": 1
+      }
+    ]
+  },
+
   {
     "cardId": "2_139",
     "title": "Sniper",
@@ -101979,6 +102098,34 @@
     ]
   },
   {
+    "cardId": "5_143",
+    "title": "Heart Of The Chasm",
+    "slug": "heart-of-the-chasm",
+    "slugWithSetName": "heart-of-the-chasm-cloud-city",
+    "side": "DARK",
+    "uniqueness": "UNRESTRICTED",
+    "expansionSet": "CLOUD_CITY",
+    "rarity": "U",
+    "cardCategory": "INTERRUPT",
+    "cardTypes": [
+      "INTERRUPT"
+    ],
+    "cardSubtype": "LOST",
+    "lore": "The Cloud City chasm's central fin was engineered with a tensile strength unsurpassed by anything in the region, save the silk of the Kashyyyk treeworm.",
+    "gameText": "During your deploy phase, use X Force to rearrange all Cloud City sites, where X = total number of those sites. All cards at a given site move along with that site. OR Cancel Off The Edge. OR Search your Reserve Deck, take one Weather Vane into hand and reshuffle.",
+    "destiny": 3,
+    "icons": [
+      {
+        "icon": "CLOUD_CITY",
+        "count": 1
+      },
+      {
+        "icon": "INTERRUPT",
+        "count": 1
+      }
+    ]
+  },
+  {
     "cardId": "5_144",
     "title": "He's All Yours, Bounty Hunter",
     "slug": "hes-all-yours-bounty-hunter",
@@ -102358,6 +102505,34 @@
     "cardSubtype": "USED",
     "lore": "Han: 2. Luke: 2. Chewie: 0.",
     "gameText": "If a battle was just initiated where opponent has a female targeted by This Is Just Wrong, add one battle destiny. OR Search your Reserve Deck, take one This Is Just Wrong into hand and reshuffle. OR Cancel This Is More Like It.",
+    "destiny": 5,
+    "icons": [
+      {
+        "icon": "CLOUD_CITY",
+        "count": 1
+      },
+      {
+        "icon": "INTERRUPT",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "cardId": "5_158",
+    "title": "TIE Sentry Ships",
+    "slug": "tie-sentry-ships",
+    "slugWithSetName": "tie-sentry-ships-cloud-city",
+    "side": "DARK",
+    "uniqueness": "UNIQUE",
+    "expansionSet": "CLOUD_CITY",
+    "rarity": "C",
+    "cardCategory": "INTERRUPT",
+    "cardTypes": [
+      "INTERRUPT"
+    ],
+    "cardSubtype": "LOST",
+    "lore": "Several TIEs were assigned to patrol Cloud City prior to the Imperial occupation of Bespin. Their instructions were to herd any vessels attempting to escape toward the Executor.",
+    "gameText": "If opponent just initiated a Force drain at a system, cloud sector or asteroid sector, you may 'react' by deploying TIEs and pilots to that location (at normal use of the Force).",
     "destiny": 5,
     "icons": [
       {
@@ -104777,6 +104952,34 @@
     "lore": "'When we find Jabba the Hutt and that bounty hunter, we'll contact you.'",
     "gameText": "During your control phase, use 1 Force to move one of your [Cloud City] characters of ability > 1 to any [Jabba's Palace] location where you have presence. If moving to any Jabba's Palace site, this movement is free and you do not need presence.",
     "destiny": 4,
+    "icons": [
+      {
+        "icon": "CLOUD_CITY",
+        "count": 1
+      },
+      {
+        "icon": "INTERRUPT",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "cardId": "5_67",
+    "title": "Rescue In The Clouds",
+    "slug": "rescue-in-the-clouds",
+    "slugWithSetName": "rescue-in-the-clouds-cloud-city",
+    "side": "LIGHT",
+    "uniqueness": "UNIQUE",
+    "expansionSet": "CLOUD_CITY",
+    "rarity": "C",
+    "cardCategory": "INTERRUPT",
+    "cardTypes": [
+      "INTERRUPT"
+    ],
+    "cardSubtype": "USED_OR_LOST",
+    "lore": "'I know where Luke is.'",
+    "gameText": "USED: If you have a character on Weather Vane, place that character on your Used Pile. LOST: Deploy one or more vehicles, starfighters and pilots (at normal use of the Force) as a 'react' to a cloud sector.",
+    "destiny": 5,
     "icons": [
       {
         "icon": "CLOUD_CITY",
@@ -127357,6 +127560,46 @@
     ],
     "keywords": [
       "CANNON"
+    ]
+  },
+  {
+    "cardId": "8_18",
+    "title": "Lieutenant Greeve",
+    "slug": "lieutenant-greeve",
+    "slugWithSetName": "lieutenant-greeve-endor",
+    "side": "LIGHT",
+    "uniqueness": "UNIQUE",
+    "expansionSet": "ENDOR",
+    "rarity": "R",
+    "cardCategory": "CHARACTER",
+    "cardTypes": [
+      "REBEL"
+    ],
+    "lore": "Scout. Famous guide who was recruited for Madine's commando unit from the forests of Kashyyyk. Sharpshooter who uses one of the BlasTech rifles brought by Corporal Janse.",
+    "gameText": "Adds 1 to each of his character weapon destiny draws (characters he 'hits' are forfeit -3). When firing an A280 Sharpshooter Rifle, may fire repeatedly at same target for 2 Force each time.",
+    "deployCost": 2,
+    "destiny": 3,
+    "power": 3,
+    "ability": 2,
+    "forfeit": 4,
+    "landspeed": 1,
+    "politics": 0,
+    "icons": [
+      {
+        "icon": "ENDOR",
+        "count": 1
+      },
+      {
+        "icon": "REBEL",
+        "count": 1
+      },
+      {
+        "icon": "WARRIOR",
+        "count": 1
+      }
+    ],
+    "keywords": [
+      "SCOUT"
     ]
   },
   {

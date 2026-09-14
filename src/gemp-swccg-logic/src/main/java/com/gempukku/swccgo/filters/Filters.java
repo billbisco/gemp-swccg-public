@@ -46,6 +46,7 @@ import com.gempukku.swccgo.logic.GameUtils;
 import com.gempukku.swccgo.logic.actions.PlayCardAction;
 import com.gempukku.swccgo.logic.effects.RespondableWeaponFiringEffect;
 import com.gempukku.swccgo.logic.modifiers.ModifyGameTextType;
+import com.gempukku.swccgo.logic.modifiers.MouseDroidUtinniCarry;
 import com.gempukku.swccgo.logic.modifiers.querying.ModifiersQuerying;
 import com.gempukku.swccgo.logic.timing.Action;
 import com.gempukku.swccgo.logic.timing.Effect;
@@ -5058,9 +5059,9 @@ public class Filters {
             @Override
             public boolean accepts(GameState gameState, ModifiersQuerying modifiersQuerying, PhysicalCard physicalCard) {
                 PhysicalCard card = gameState.findCardByPermanentId(permCardId);
-                PhysicalCard attachedTo = card.getAttachedTo();
-                return attachedTo != null
-                        && Filters.sameCardId(attachedTo).accepts(gameState, modifiersQuerying, physicalCard);
+                // Mouse carry: Utinni modifiers that key off host apply to hunted targets, not the mouse.
+                // Reversible via MouseDroidUtinniCarry.
+                return MouseDroidUtinniCarry.acceptsAsEffectHost(gameState, modifiersQuerying, card, physicalCard);
             }
         };
     }
@@ -12664,6 +12665,30 @@ public class Filters {
     }
 
     /**
+     * Filter that accepts cards deployed "between" two sites (attached to one site and targeting the other via
+     * TargetId.EFFECT_TARGET_1) where either bounding site is accepted by the site filter.
+     * Used so between-sites devices (e.g. Laser Gate) can be weapon-targeted from either bounding site.
+     *
+     * @param siteFilter filter for one of the bounding sites
+     * @return Filter
+     */
+    public static Filter deployedBetweenSitesIncluding(final Filterable siteFilter) {
+        final Filter filterToCheck = Filters.and(siteFilter);
+        return new Filter() {
+            @Override
+            public boolean accepts(GameState gameState, ModifiersQuerying modifiersQuerying, PhysicalCard physicalCard) {
+                PhysicalCard attachedTo = physicalCard.getAttachedTo();
+                PhysicalCard otherSite = physicalCard.getTargetedCard(gameState, TargetId.EFFECT_TARGET_1);
+                if (attachedTo == null || otherSite == null) {
+                    return false;
+                }
+                return filterToCheck.accepts(gameState, modifiersQuerying, attachedTo)
+                        || filterToCheck.accepts(gameState, modifiersQuerying, otherSite);
+            }
+        };
+    }
+
+    /**
      * Filter that accepts cards being played that are targeting the specified card.
      */
     public static Filter cardBeingPlayedTargeting(PhysicalCard source, PhysicalCard card) {
@@ -17806,6 +17831,7 @@ public class Filters {
     public static final Filter AAT = Filters.modelType(ModelType.AAT);
     public static final Filter AAT_Laser_Cannon = Filters.title(Title.AAT_Laser_Cannon);
     public static final Filter accountant = Filters.keyword(Keyword.ACCOUNTANT);
+    public static final Filter Access_Denied = Filters.title(Title.Access_Denied);
     public static final Filter Restricted_Access = Filters.title(Title.Restricted_Access);
     public static final Filter Ackbar = Filters.persona(Persona.ACKBAR);
     public static final Filter AhchTo_Jedi_Village = Filters.title(Title.AhchTo_Jedi_Village);
@@ -19132,6 +19158,7 @@ public class Filters {
     public static final Filter Republic_character = Filters.and(Filters.icon(Icon.REPUBLIC), CardCategory.CHARACTER);
     public static final Filter Republic_starship = Filters.and(Filters.icon(Icon.REPUBLIC), CardCategory.STARSHIP);
     public static final Filter Res_Luk_Raauf = Filters.title(Title.Res_Luk_Raauf);
+    public static final Filter Rescue_In_The_Clouds = Filters.title(Title.Rescue_In_The_Clouds);
     public static final Filter Rescue_The_Princess = Filters.title(Title.Rescue_The_Princess);
     public static final Filter Resistance = Filters.title(Title.Resistance);
     public static final Filter resistance = Filters.icon(Icon.RESISTANCE);
@@ -19238,6 +19265,7 @@ public class Filters {
     public static final Filter Senate_Hovercam = Filters.title(Title.Senate_Hovercam);
     public static final Filter senator = Filters.keyword(Keyword.SENATOR);
     public static final Filter Sense = Filters.title(Title.Sense);
+    public static final Filter Sensor_Panel = Filters.title(Title.Sensor_Panel);
     public static final Filter Separatist_Command_Center = Filters.title(Title.Separatist_Command_Center);
     public static final Filter Set_For_Stun = Filters.title(Title.Set_For_Stun);
     public static final Filter Set_Your_Course_For_Alderaan = Filters.title(Title.Set_Your_Course_For_Alderaan);
@@ -19489,6 +19517,7 @@ public class Filters {
     public static final Filter TIE_ln = Filters.modelType(ModelType.TIE_LN);
     public static final Filter TIE_rc = Filters.modelType(ModelType.TIE_RC);
     public static final Filter TIE_sa = Filters.modelType(ModelType.TIE_SA);
+    public static final Filter TIE_Sentry_Ships = Filters.title(Title.TIE_Sentry_Ships);
     public static final Filter TIE_sr = Filters.modelType(ModelType.TIE_SR);
     public static final Filter TIE_vn = Filters.modelType(ModelType.TIE_VN);
     public static final Filter Tigran = Filters.persona(Persona.TIGRAN);
