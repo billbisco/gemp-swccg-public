@@ -43,6 +43,7 @@ public class Card_112_013_Tests {
                     put("tie1", "1_304");
                     put("tie2", "1_304");
                     put("crawler", "1_309");
+                    put("crawler2", "1_309");
                     put("trooper1", "1_194");
                     put("trooper2", "1_194");
                     put("bespin", "5_164");
@@ -204,6 +205,71 @@ public class Card_112_013_Tests {
         scn.SkipToPowerSegment();
         assertEquals(1, scn.GetDSBattleDestinyCount());
         assertTrue(scn.DSDecisionAvailable("Do you want to draw 1 battle destiny?"));
+    }
+
+    /**
+     * Two Mercenary Pilots both driving transports add only one battle destiny.
+     * The driving text is one clause and does not say Cumulatively.
+     */
+    @Test
+    public void MercenaryPilotDrivingBattleDestinyDoesNotStackFromTwoCopies() {
+        var scn = GetScenario();
+
+        var pilot1 = scn.GetDSCard("pilot1");
+        var pilot2 = scn.GetDSCard("pilot2");
+        var crawler = scn.GetDSCard("crawler");
+        var crawler2 = scn.GetDSCard("crawler2");
+        var luke = scn.GetLSCard("luke");
+        var site = scn.GetDSStartingLocation();
+
+        scn.StartGame();
+        scn.MoveCardsToLocation(site, crawler, crawler2, luke);
+        scn.BoardAsPilot(crawler, pilot1);
+        scn.BoardAsPilot(crawler2, pilot2);
+
+        scn.SkipToPhase(Phase.BATTLE);
+        scn.DSInitiateBattle(site);
+        scn.SkipToPowerSegment();
+
+        assertTrue(scn.DSDecisionAvailable("Do you want to draw 1 battle destiny?"));
+        assertFalse(scn.DSDecisionAvailable("Do you want to draw 2 battle destiny?"));
+    }
+
+    /**
+     * Issue 697: one copy driving a transport and one copy piloting at a related cloud sector
+     * are different game-text clauses, so both add a battle destiny.
+     * Cloud-sector destiny is optional; the test accepts that popup.
+     * Battle is at Cloud City: Platform 327 (exterior).
+     */
+    @Test
+    public void MercenaryPilotDrivingAndCloudSectorTextsBothAddBattleDestiny() {
+        var scn = GetScenario();
+
+        var pilot1 = scn.GetDSCard("pilot1");
+        var pilot2 = scn.GetDSCard("pilot2");
+        var crawler = scn.GetDSCard("crawler");
+        var tie = scn.GetDSCard("tie1");
+        var cloudCity = scn.GetDSCard("cloudCity");
+        var bespin = scn.GetDSCard("bespin");
+        var luke = scn.GetLSCard("luke");
+        var site = scn.GetLSCard("platform327");
+
+        scn.StartGame();
+        scn.MoveLocationToTable(bespin);
+        scn.MoveLocationToTable(cloudCity);
+        scn.MoveLocationToTable(site);
+        scn.MoveCardsToLocation(site, crawler, luke);
+        scn.BoardAsPilot(crawler, pilot1);
+        scn.MoveCardsToLocation(cloudCity, tie);
+        scn.BoardAsPilot(tie, pilot2);
+
+        scn.SkipToDSTurn(Phase.BATTLE);
+        InitiateBattleKeepingStartResponses(scn, site);
+        assertTrue(scn.DSAnyDecisionsAvailable() && scn.DSCardActionAvailable(pilot2, "Add one battle destiny"));
+        scn.DSUseCardAction(pilot2, "Add one battle destiny");
+        scn.SkipToPowerSegment();
+
+        assertTrue(scn.DSDecisionAvailable("Do you want to draw 2 battle destiny?"));
     }
 
     /**
