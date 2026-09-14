@@ -24,6 +24,7 @@ public enum GameTextActionId {
     OTHER_CARD_ACTION_REACT_MOVE_OTHER_CARDS,
     // Used for card action that causes other cards to move away as a 'react'
     OTHER_CARD_ACTION_REACT_MOVE_AWAY_OTHER_CARDS,
+    OTHER_CARD_ACTION_REACT_MOVE_AWAY_FROM_ATTACK_OTHER_CARDS,
 
     // Search card pile
     _4_LOM__SEARCH_USED_PILE(true),
@@ -257,6 +258,7 @@ public enum GameTextActionId {
     GROGU__DOWNLOAD_FOUNDLING(true),
     HANS_BACK__RETRIEVE_HAN(true),
     HANS_BACK__UPLOAD_HAN(true),
+    HEART_OF_THE_CHASM__UPLOAD_WEATHER_VANE(true),
     HERAT__UPLOAD_UTINNI_OR_JAWA(true),
     HERMI_ODLE__DOWNLOAD_NON_UNIQUE_BLASTER_AS_REACT(true),
     HERO_OF_A_THOUSAND_DEVICES__UPLOAD_DEVICE(true),

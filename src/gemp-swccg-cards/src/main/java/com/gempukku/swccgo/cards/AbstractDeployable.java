@@ -411,7 +411,11 @@ public abstract class AbstractDeployable extends AbstractNonLocationPlaysToTable
             return null;
         }
 
+        // FLAG(Chief): attack-react support for R2 Sensor Array (3_31) � use attack location when battle/FD absent and react from other card
         PhysicalCard battleOrForceDrainLocation = game.getGameState().getBattleOrForceDrainLocation();
+        if (battleOrForceDrainLocation == null && reactActionFromOtherCard != null) {
+            battleOrForceDrainLocation = game.getGameState().getAttackLocation();
+        }
         if (battleOrForceDrainLocation == null) {
             return null;
         }
@@ -1989,8 +1993,9 @@ public abstract class AbstractDeployable extends AbstractNonLocationPlaysToTable
             if (modifiersQuerying.mayNotBeFired(gameState, permWeapon))
                 return false;
 
-            // Check if weapon is allowed to fire repeatedly
-            if (repeatedFiring && !modifiersQuerying.mayFireWeaponRepeatedly(gameState, self))
+            // Check if weapon is allowed to fire repeatedly (any target or same-target-only)
+            if (repeatedFiring && !modifiersQuerying.mayFireWeaponRepeatedly(gameState, self)
+                    && !modifiersQuerying.mayFireWeaponRepeatedlyAtSameTarget(gameState, self))
                 return false;
 
             // Check that weapon is present at the location
