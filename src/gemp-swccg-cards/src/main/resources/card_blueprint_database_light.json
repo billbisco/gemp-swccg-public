@@ -9060,6 +9060,33 @@
     ]
   },
   {
+    "cardId": "13_13",
+    "title": "Desperate Times",
+    "slug": "desperate-times",
+    "slugWithSetName": "desperate-times-reflections-iii",
+    "side": "LIGHT",
+    "uniqueness": "UNIQUE",
+    "expansionSet": "REFLECTIONS_III",
+    "rarity": "PM",
+    "cardCategory": "INTERRUPT",
+    "cardTypes": [
+      "INTERRUPT"
+    ],
+    "cardSubtype": "LOST",
+    "lore": "Han's best tactic when outnumbered? Shoot first and don't worry about asking questions later.",
+    "gameText": "During a battle where your opponent has more characters participating than you, fire (for free) one blaster that cannot fire repeatedly, even if that blaster was already fired this battle. Add 1 to your total weapon destiny.",
+    "destiny": 4,
+    "icons": [
+      {
+        "icon": "REFLECTIONS_III",
+        "count": 1
+      },
+      {
+        "icon": "INTERRUPT",
+        "count": 1
+      }
+    ]
+  },  {
     "cardId": "13_14",
     "title": "Diversionary Tactics",
     "slug": "diversionary-tactics",
