@@ -1,18 +1,18 @@
 # swccg-gemp
 
-Independent GEMP server for playing Star Wars CCG in a browser. The program takes care of the rules so you don't have to.
+Independent GEMP server for playing Star Wars Customizeable Card game  (SWCCG) in a browser. The program takes care of the rules so you don't have to.
 
+Site: https://www.swccggemp.com/
 Play: https://play.swccggemp.com/  
 Test: https://test.swccggemp.com/  
-Site: https://www.swccggemp.com/
-
-This repository is **not** an official Players Committee project and is **not** affiliated with Lucasfilm or Disney. Organized play and the public PC table remain at [starwarsccg.org](https://www.starwarsccg.org/).
-
-The code started from [PlayersCommittee/gemp-swccg-public](https://github.com/PlayersCommittee/gemp-swccg-public) and keeps that git history. We will pull some of their card and engine work over time. Our default GitHub compare target is this repo, not the Players Committee.
 
 ## Thanks
 
-GEMP exists because of a long line of volunteer work. Thanks to everyone who built and maintained **LOTR GEMP** and **SWCCG GEMP**, including Troy Biesterfeld and the many authors, testers, and Players Committee contributors who followed. This project continues that MIT-licensed server so more tables can run.
+GEMP exists because of a long line of volunteer work. Thanks to everyone who built and maintained **LOTR GEMP** and **SWCCG GEMP**, including MarcinS, Christian McCarty, Troy Biesterfeld, Greg Zinn, and the many developers and testers who followed
+
+## Note
+
+This is **not** affiliated with Lucasfilm or Disney. You can visit the official SWCCG Player's Committee including their version of GEMP at [starwarsccg.org](https://www.starwarsccg.org/).
 
 License: [MIT](LICENSE). See [NOTICE](NOTICE).
 
