@@ -1793,6 +1793,15 @@ public class Card_1_188_Tests {
         // VCSD takes the real sector-movement route to Big One; Mouse reaches the
         // Utinni there and accepts the printed relocate option.
         scn.SkipToDSTurn(Phase.MOVE);
+        for (int i = 0; i < 12 && !scn.AwaitingDSMovePhaseActions(); i++) {
+            if (scn.LSAnyDecisionsAvailable() && !scn.DSAnyDecisionsAvailable()) {
+                scn.LSPass();
+                continue;
+            }
+            break;
+        }
+        assertTrue(scn.AwaitingDSMovePhaseActions());
+        assertTrue("VCSD should be able to move to the asteroid sector", scn.DSCardActionAvailable(vcsd, "sector"));
         scn.DSUseCardAction(vcsd, "sector");
         scn.DSChooseCard(bigOne);
         scn.PassAllResponses();
@@ -1804,6 +1813,15 @@ public class Card_1_188_Tests {
         // The target reaches the carried package by a real sector move. The Utinni
         // relocates back to Kessel and Mouse returns to hand on that delivery.
         scn.SkipToLSTurn(Phase.MOVE);
+        for (int i = 0; i < 12 && !scn.AwaitingLSMovePhaseActions(); i++) {
+            if (scn.DSAnyDecisionsAvailable() && !scn.LSAnyDecisionsAvailable()) {
+                scn.DSPass();
+                continue;
+            }
+            break;
+        }
+        assertTrue(scn.AwaitingLSMovePhaseActions());
+        assertTrue("A-wing should be able to move to the asteroid sector", scn.LSCardActionAvailable(awing, "sector"));
         scn.LSUseCardAction(awing, "sector");
         scn.LSChooseCard(bigOne);
         scn.PassAllResponses();
@@ -1813,6 +1831,14 @@ public class Card_1_188_Tests {
         // Target returns to the related system, completing Rycar's Run and retrieving X.
         scn.SkipToDSTurn();
         scn.SkipToLSTurn(Phase.MOVE);
+        for (int i = 0; i < 12 && !scn.AwaitingLSMovePhaseActions(); i++) {
+            if (scn.DSAnyDecisionsAvailable() && !scn.LSAnyDecisionsAvailable()) {
+                scn.DSPass();
+                continue;
+            }
+            break;
+        }
+        assertTrue(scn.AwaitingLSMovePhaseActions());
         scn.LSUseCardAction(awing, "sector");
         scn.LSChooseCard(kessel);
         scn.PassAllResponses();

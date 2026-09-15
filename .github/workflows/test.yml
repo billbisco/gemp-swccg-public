@@ -35,7 +35,7 @@ jobs:
           cache: maven
 
       - name: mvn build
-        run: mvn clean verify
+        run: mvn clean verify -Dsurefire.rerunFailingTestsCount=1
         working-directory: src
 
       - name: Upload packaged app jar

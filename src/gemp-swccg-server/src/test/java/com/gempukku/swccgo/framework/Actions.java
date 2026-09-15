@@ -35,7 +35,11 @@ public interface Actions extends Decisions, Choices {
         if(decision == null) {
             return new ArrayList<>();
         }
-        return Arrays.asList(decision.getDecisionParameters().get("actionText"));
+        String[] texts = decision.getDecisionParameters().get("actionText");
+        if (texts == null) {
+            return new ArrayList<>();
+        }
+        return Arrays.asList(texts);
     }
 
     /**

@@ -290,7 +290,11 @@ public interface Decisions extends GameProperties, TestBase  {
      * @return How many entries in the parameter list exactly matched the search text.
      */
     default int GetADParamEqualsCount(String playerID, String paramName, String value) {
-        return (int) Arrays.stream(GetADParam(playerID, paramName)).filter(s -> s.equals(value)).count();
+        String[] values = GetADParam(playerID, paramName);
+        if (values == null) {
+            return 0;
+        }
+        return (int) Arrays.stream(values).filter(s -> s.equals(value)).count();
     }
 
     /**
@@ -303,6 +307,9 @@ public interface Decisions extends GameProperties, TestBase  {
      */
     default String[] GetADParam(String playerID, String paramName) {
         var decision = userFeedback().getAwaitingDecision(playerID);
+        if (decision == null) {
+            return null;
+        }
         return decision.getDecisionParameters().get(paramName);
     }
 

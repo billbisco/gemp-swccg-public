@@ -628,18 +628,25 @@ public class Card_5_067_Tests {
         var rescue = scn.GetLSCard("rescue");
         var xwing = scn.GetLSCard("xwing");
         var hoth = scn.GetDSCard("hoth");
-        var bigOne = scn.GetDSCard("big-one");
         var tie = scn.GetDSCard("tie");
 
         scn.StartGame();
 
         scn.MoveLocationToTable(hoth);
-        scn.MoveLocationToTable(bigOne);
-        scn.MoveCardsToLocation(bigOne, tie, xwing);
         scn.MoveCardsToLSHand(rescue);
+        scn.MoveCardsToLocation(hoth, tie, xwing);
 
+        // System battle is not a cloud sector (same negative as asteroid, without Asteroid Rules).
         scn.SkipToDSTurn(Phase.BATTLE);
-        scn.DSInitiateBattle(bigOne);
+        for (int i = 0; i < 12 && !scn.AwaitingDSBattlePhaseActions(); i++) {
+            if (scn.LSAnyDecisionsAvailable() && !scn.DSAnyDecisionsAvailable()) {
+                scn.LSPass();
+                continue;
+            }
+            break;
+        }
+        assertTrue(scn.AwaitingDSBattlePhaseActions());
+        scn.DSInitiateBattle(hoth);
         assertFalse(scn.LSAnyDecisionsAvailable() && scn.LSCardPlayAvailable(rescue));
     }
 
