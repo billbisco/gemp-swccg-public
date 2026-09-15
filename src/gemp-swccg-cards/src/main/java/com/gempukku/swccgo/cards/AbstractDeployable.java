@@ -57,10 +57,7 @@ import com.gempukku.swccgo.game.state.AttackRunState;
 import com.gempukku.swccgo.game.state.GameState;
 import com.gempukku.swccgo.logic.TriggerConditions;
 import com.gempukku.swccgo.logic.actions.FireWeaponAction;
-import com.gempukku.swccgo.logic.modifiers.TotalWeaponDestinyForWeaponFiredByModifier;
-import com.gempukku.swccgo.logic.effects.AddUntilEndOfWeaponFiringModifierEffect;
-import com.gempukku.swccgo.game.state.WhileInPlayData;
-import com.gempukku.swccgo.cards.effects.SetWhileInPlayDataEffect;
+
 import com.gempukku.swccgo.logic.actions.PlayCardAction;
 import com.gempukku.swccgo.logic.actions.RequiredRuleTriggerAction;
 import com.gempukku.swccgo.logic.actions.TopLevelGameTextAction;
@@ -2142,9 +2139,15 @@ public abstract class AbstractDeployable extends AbstractNonLocationPlaysToTable
                         || (self.getAttachedTo() != null && game.getGameState().isParticipatingInAttack(self.getAttachedTo())) //weapon cards
                 )
                 ) {
-                    addFireWeaponActionsWithOptionalFreeAndAdd2(actions, playerId, game, self, Filters.participatingInAttack);
+                    List<FireWeaponAction> attackFire = getFireWeaponActions(playerId, game, self, false, 0, self, false, Filters.none, null, Filters.participatingInAttack, false);
+                    if (attackFire != null) {
+                        actions.addAll(attackFire);
+                    }
                 } else if (game.getGameState().isDuringBattle()){
-                    addFireWeaponActionsWithOptionalFreeAndAdd2(actions, playerId, game, self, Filters.any);
+                    List<FireWeaponAction> battleFire = getFireWeaponActions(playerId, game, self, false, 0, self, false, Filters.none, null, Filters.any, false);
+                    if (battleFire != null) {
+                        actions.addAll(battleFire);
+                    }
                 }
             }
         }
@@ -2171,78 +2174,6 @@ public abstract class AbstractDeployable extends AbstractNonLocationPlaysToTable
         }
 
         return actions;
-    }
-
-
-    /**
-     * Adds paid fire-weapon actions, and when a character may optionally fire for free and add 2 to total weapon destiny
-     * (Jodo Kast / Sabine Wren pattern), also adds a once-per-turn free+2 fire action — same dual-action pattern as
-     * Battle Plan / Wise Advice initiate-for-free.
-     */
-    private void addFireWeaponActionsWithOptionalFreeAndAdd2(List<Action> actions, String playerId, SwccgGame game, PhysicalCard self, Filter fireAtTargetFilter) {
-        List<FireWeaponAction> paidActions = getFireWeaponActions(playerId, game, self, false, 0, self, false, Filters.none, null, fireAtTargetFilter, false);
-        if (paidActions != null) {
-            actions.addAll(paidActions);
-        }
-
-        PhysicalCard maySource = getMayFireWeaponFiredByForFreeAndAdd2Source(game, self);
-        if (maySource == null) {
-            return;
-        }
-
-        List<FireWeaponAction> freeActions = getFireWeaponActions(playerId, game, self, true, 0, self, false, Filters.none, null, fireAtTargetFilter, false);
-        if (freeActions == null || freeActions.isEmpty()) {
-            return;
-        }
-
-        for (FireWeaponAction freeAction : freeActions) {
-            String text = freeAction.getText();
-            if (text != null && !text.contains("for free and add 2")) {
-                freeAction.setText(text + " for free and add 2");
-            }
-            // Package: once-per-turn free fire WITH +2 destiny together
-            freeAction.appendBeforeCost(new SetWhileInPlayDataEffect(freeAction, maySource, new WhileInPlayData()));
-            freeAction.appendBeforeCost(new AddUntilEndOfWeaponFiringModifierEffect(freeAction,
-                    new TotalWeaponDestinyForWeaponFiredByModifier(maySource, 2, Filters.or(Filters.rifle, Filters.blaster)), null));
-            actions.add(freeAction);
-        }
-    }
-
-    /**
-     * Finds the source of an optional "may fire for free" package that applies to firing this weapon card
-     * (or this card's permanent weapon / artillery used by a present warrior).
-     */
-    private PhysicalCard getMayFireWeaponFiredByForFreeAndAdd2Source(SwccgGame game, PhysicalCard self) {
-        ModifiersQuerying modifiersQuerying = game.getModifiersQuerying();
-        GameState gameState = game.getGameState();
-
-        if (self.getAttachedTo() != null) {
-            PhysicalCard source = modifiersQuerying.getMayFireWeaponFiredByForFreeSource(gameState, self.getAttachedTo(), self);
-            if (source != null) {
-                return source;
-            }
-        }
-
-        PhysicalCard source = modifiersQuerying.getMayFireWeaponFiredByForFreeSource(gameState, self, self);
-        if (source != null) {
-            return source;
-        }
-
-        SwccgBuiltInCardBlueprint permanentWeapon = modifiersQuerying.getPermanentWeapon(gameState, self);
-        if (permanentWeapon != null) {
-            source = modifiersQuerying.getMayFireWeaponFiredByForFreeSource(gameState, self, permanentWeapon);
-            if (source != null) {
-                return source;
-            }
-        }
-
-        for (PhysicalCard warrior : Filters.filterActive(game, self, Filters.and(Filters.your(self), Filters.warrior, Filters.present(self)))) {
-            source = modifiersQuerying.getMayFireWeaponFiredByForFreeSource(gameState, warrior, self);
-            if (source != null) {
-                return source;
-            }
-        }
-        return null;
     }
 
     /**
@@ -2436,7 +2367,10 @@ public abstract class AbstractDeployable extends AbstractNonLocationPlaysToTable
                 }
                 Filter validTarget = !wingmen.isEmpty() ? Filters.wingmen_in_Attack_Run : Filters.lead_starfighter_in_Attack_Run;
 
-                addFireWeaponActionsWithOptionalFreeAndAdd2(actions, playerId, game, self, validTarget);
+                List<FireWeaponAction> attackRunFire = getFireWeaponActions(playerId, game, self, false, 0, self, false, Filters.none, null, validTarget, false);
+                if (attackRunFire != null) {
+                    actions.addAll(attackRunFire);
+                }
             }
         }
 
