@@ -21,6 +21,8 @@ public abstract class AbstractAction implements Action {
     private LinkedList<TargetingEffect> _processedTargetingCosts = new LinkedList<TargetingEffect>();
     private LinkedList<UsageEffect> _usageCosts = new LinkedList<UsageEffect>();
     private LinkedList<UsageEffect> _processedUsageCosts = new LinkedList<UsageEffect>();
+    private LinkedList<StandardEffect> _preTargetingCosts = new LinkedList<StandardEffect>();
+    private LinkedList<StandardEffect> _processedPreTargetingCosts = new LinkedList<StandardEffect>();
     private LinkedList<StandardEffect> _beforeStandardCosts = new LinkedList<StandardEffect>();
     private LinkedList<StandardEffect> _processedBeforeStandardCosts = new LinkedList<StandardEffect>();
     private LinkedList<StandardEffect> _standardCosts = new LinkedList<StandardEffect>();
@@ -64,6 +66,8 @@ public abstract class AbstractAction implements Action {
         snapshot._processedTargetingCosts.addAll(_processedTargetingCosts);
         snapshot._usageCosts.addAll(_usageCosts);
         snapshot._processedUsageCosts.addAll(_processedUsageCosts);
+        snapshot._preTargetingCosts.addAll(_preTargetingCosts);
+        snapshot._processedPreTargetingCosts.addAll(_processedPreTargetingCosts);
         snapshot._beforeStandardCosts.addAll(_beforeStandardCosts);
         snapshot._processedBeforeStandardCosts.addAll(_processedBeforeStandardCosts);
         snapshot._standardCosts.addAll(_standardCosts);
@@ -284,6 +288,25 @@ public abstract class AbstractAction implements Action {
      *
      * @param cost the cost
      */
+    /**
+     * Appends a cost that runs before targeting. It will be executed after any other pre-targeting costs currently
+     * in the queue, and before targeting / usage / beforeCost / cost.
+     *
+     * @param cost the cost
+     */
+    @Override
+    public final void appendPreTargetingCost(StandardEffect cost) {
+        if (!_processedTargetingCosts.isEmpty()
+                || !_processedUsageCosts.isEmpty()
+                || !_processedPreTargetingCosts.isEmpty()
+                || !_processedStandardCosts.isEmpty()
+                || !_processedEffects.isEmpty()
+                || !_processedAfterEffects.isEmpty())
+            throw new UnsupportedOperationException("Called appendPreTargetingCost() in incorrect order");
+
+        _preTargetingCosts.add(cost);
+    }
+
     @Override
     public final void appendBeforeCost(StandardEffect cost) {
         if (!_processedStandardCosts.isEmpty()
@@ -398,6 +421,10 @@ public abstract class AbstractAction implements Action {
             if (!processedCost.wasCarriedOut())
                 return true;
         }
+        for (StandardEffect processedCost : _processedPreTargetingCosts) {
+            if (!processedCost.wasCarriedOut())
+                return true;
+        }
         for (StandardEffect processedCost : _processedBeforeStandardCosts) {
             if (!processedCost.wasCarriedOut())
                 return true;
@@ -415,6 +442,13 @@ public abstract class AbstractAction implements Action {
      * @return action cost to process
      */
     protected final Effect getNextCost() {
+        StandardEffect preTargetingCost = _preTargetingCosts.poll();
+        if (preTargetingCost != null) {
+            preTargetingCost.setAction(this);
+            _processedPreTargetingCosts.add(preTargetingCost);
+            return preTargetingCost;
+        }
+
         TargetingEffect targetingCost = _targetingCosts.poll();
         if (targetingCost != null) {
             targetingCost.setAction(this);

@@ -706,7 +706,7 @@ public abstract class AbstractNonLocationPlaysToTable extends AbstractSwccgCardB
     private void attachMayFireForFreeAndAdd2Prompt(final FireWeaponAction fireWeaponAction, final String playerId,
                                                    final SwccgGame game, final PhysicalCard maySource) {
         final String sourceTitle = GameUtils.getFullName(maySource);
-        fireWeaponAction.appendBeforeCost(
+        fireWeaponAction.appendPreTargetingCost(
                 new PlayoutDecisionEffect(fireWeaponAction, playerId,
                         new MultipleChoiceAwaitingDecision("Use " + sourceTitle + ": fire for free and add 2 to total weapon destiny?", new String[]{"Yes", "No"}) {
                             @Override
