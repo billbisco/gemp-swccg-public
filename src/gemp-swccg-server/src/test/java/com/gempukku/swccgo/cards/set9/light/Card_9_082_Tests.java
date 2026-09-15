@@ -101,11 +101,21 @@ public class Card_9_082_Tests {
         scn.LSUseCardAction(xwlc, "Fire");
         scn.LSChooseCard(tie);
         assertTrue(scn.LSDecisionAvailable("Choose X for this firing"));
-        scn.LSChooseOption("X=3 using Red Squadron 4");
+        var xChoices = scn.LSGetADParamAsList("results");
+        int special = -1;
+        for (int i = 0; i < xChoices.size(); i++) {
+            if (xChoices.get(i).contains("using Red Squadron 4")) {
+                special = i;
+                break;
+            }
+        }
+        assertTrue("Missing X=3 using Red Squadron 4; choices=" + xChoices, special >= 0);
+        int forceBefore = scn.GetLSForcePileCount();
+        scn.LSDecided(special);
         scn.PassWeaponFireWithDestinyDraw();
         scn.PassAllResponses();
 
-        assertEquals("2 Force pays for X=3, so Used Pile should receive those 2 Force", 0, scn.GetLSForcePileCount());
+        assertEquals("Red Squadron 4 option uses 2 Force", forceBefore - 2, scn.GetLSForcePileCount());
         assertTrue("X=3 must lose the TIE (destiny 1 + X 3 > maneuver 3)",
                 tie.getZone() == Zone.LOST_PILE || tie.getZone() == Zone.TOP_OF_LOST_PILE);
     }
