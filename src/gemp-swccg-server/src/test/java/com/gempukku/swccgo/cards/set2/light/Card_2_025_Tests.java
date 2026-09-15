@@ -8,10 +8,13 @@ import org.junit.Test;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Issue #974: Fire Extinguisher deploys on Artoo-Detoo In Red 5 (permanent astromech is R2-D2).
+ * Issue #974: Fire Extinguisher deploys on an astromech droid character, not on a
+ * starship whose permanent astromech is R2-D2 (AR: permanents are not character cards).
  */
 public class Card_2_025_Tests {
 
@@ -45,7 +48,7 @@ public class Card_2_025_Tests {
     }
 
     @Test
-    public void FireExtinguisherDeploysOnArtooDetooInRed5() {
+    public void FireExtinguisherDoesNotDeployOnArtooDetooInRed5() {
         var scn = GetScenario();
         var extinguisher = scn.GetLSCard("extinguisher");
         var artooRed5 = scn.GetLSCard("artooRed5");
@@ -59,12 +62,8 @@ public class Card_2_025_Tests {
         scn.LSActivateForceCheat(6);
 
         scn.SkipToLSTurn(Phase.DEPLOY);
-        assertTrue(scn.LSCardActionAvailable(extinguisher, "Deploy"));
-        scn.LSDeployCard(extinguisher);
-        assertTrue(scn.LSHasCardChoiceAvailable(artooRed5));
-        scn.LSChooseCard(artooRed5);
-        scn.PassAllResponses();
-        assertEquals(artooRed5, extinguisher.getAttachedTo());
+        assertFalse(scn.LSCardActionAvailable(extinguisher, "Deploy"));
+        assertNull(extinguisher.getAttachedTo());
     }
 
     @Test
