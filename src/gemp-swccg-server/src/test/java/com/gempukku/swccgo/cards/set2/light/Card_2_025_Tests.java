@@ -20,8 +20,9 @@ public class Card_2_025_Tests {
                 new HashMap<>() {{
                     put("extinguisher", "2_25");
                     put("artooRed5", "111_2");
-                    put("r2", "1_2");
+                    put("r2", "2_14");
                     put("luke", "1_19");
+                    put("walkway", "5_79");
                 }},
                 new HashMap<>(),
                 10,
@@ -58,8 +59,8 @@ public class Card_2_025_Tests {
         scn.LSActivateForceCheat(6);
 
         scn.SkipToLSTurn(Phase.DEPLOY);
-        assertTrue(scn.LSCardPlayAvailable(extinguisher));
-        scn.LSPlayCard(extinguisher);
+        assertTrue(scn.LSCardActionAvailable(extinguisher, "Deploy"));
+        scn.LSDeployCard(extinguisher);
         assertTrue(scn.LSHasCardChoiceAvailable(artooRed5));
         scn.LSChooseCard(artooRed5);
         scn.PassAllResponses();
@@ -71,15 +72,17 @@ public class Card_2_025_Tests {
         var scn = GetScenario();
         var extinguisher = scn.GetLSCard("extinguisher");
         var r2 = scn.GetLSCard("r2");
-        var site = scn.GetDSStartingLocation();
+        var walkway = scn.GetLSCard("walkway");
 
         scn.StartGame();
-        scn.MoveCardsToLocation(site, r2);
+        scn.MoveLocationToTable(walkway);
+        scn.MoveCardsToLocation(walkway, r2);
         scn.MoveCardsToLSHand(extinguisher);
         scn.LSActivateForceCheat(6);
 
         scn.SkipToLSTurn(Phase.DEPLOY);
-        scn.LSPlayCard(extinguisher);
+        assertTrue(scn.LSCardActionAvailable(extinguisher, "Deploy"));
+        scn.LSDeployCard(extinguisher);
         assertTrue(scn.LSHasCardChoiceAvailable(r2));
         scn.LSChooseCard(r2);
         scn.PassAllResponses();
