@@ -56,22 +56,22 @@ public class Card_9_082_Tests {
         assertEquals(Uniqueness.UNIQUE, card.getUniqueness());
         assertEquals(Rarity.U, card.getRarity());
         assertEquals(CardSubtype.STARFIGHTER, card.getCardSubtype());
-        assertEquals(2, card.getDestiny());
-        assertEquals(2, card.getDeployCost(), 0.01);
-        assertEquals(3, card.getPower(), 0.01);
-        assertEquals(4, card.getManeuver(), 0.01);
-        assertEquals(5, card.getHyperspeed(), 0.01);
-        assertEquals(5, card.getForfeit(), 0.01);
-        scn.BlueprintCardTypeCheck(scn.GetLSCard("rs4"), new ArrayList<>() {{
+        assertEquals(2f, card.getDestiny(), 0.01f);
+        assertEquals(2f, card.getDeployCost(), 0.01f);
+        assertEquals(3f, card.getPower(), 0.01f);
+        assertEquals(4f, card.getManeuver(), 0.01f);
+        assertEquals(5f, card.getHyperspeed(), 0.01f);
+        assertEquals(5f, card.getForfeit(), 0.01f);
+        scn.BlueprintCardTypeCheck(card, new ArrayList<>() {{
             add(CardType.STARSHIP);
         }});
-        scn.BlueprintIconCheck(scn.GetLSCard("rs4"), new ArrayList<>() {{
+        scn.BlueprintIconCheck(card, new ArrayList<>() {{
             add(Icon.DEATH_STAR_II);
             add(Icon.STARSHIP);
             add(Icon.NAV_COMPUTER);
             add(Icon.SCOMP_LINK);
         }});
-        scn.BlueprintKeywordCheck(scn.GetLSCard("rs4"), new ArrayList<>() {{
+        scn.BlueprintKeywordCheck(card, new ArrayList<>() {{
             add(Keyword.RED_SQUADRON);
         }});
     }
