@@ -190,7 +190,13 @@ public class Card_14_71_Tests {
         }
         scn.MoveCardsToTopOfOwnReserveDeck(bd2, bd1);
         assertEquals(2, scn.GetDSReserveDeckCount());
-        scn.DSActivateForceCheat(4);
+        while (scn.GetDSForcePileCount() < 2) {
+            var used = scn.GetDSUsedPile();
+            assertFalse("Need Used Pile cards to top up Force without touching the 2-card Reserve", used.isEmpty());
+            scn.MoveCardsToTopOfDSForcePile((com.gempukku.swccgo.game.PhysicalCardImpl) used.get(0));
+        }
+        assertTrue(scn.GetDSForcePileCount() >= 2);
+        assertEquals(2, scn.GetDSReserveDeckCount());
 
         scn.LSInitiateBattle(lsHallway);
         assertTrue(scn.DSCardActionAvailable(threeb3, "Reveal"));
