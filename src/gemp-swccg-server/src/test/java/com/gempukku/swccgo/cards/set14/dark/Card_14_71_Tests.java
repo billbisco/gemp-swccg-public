@@ -190,6 +190,7 @@ public class Card_14_71_Tests {
         }
         scn.MoveCardsToTopOfOwnReserveDeck(bd2, bd1);
         assertEquals(2, scn.GetDSReserveDeckCount());
+        scn.DSActivateForceCheat(4);
 
         scn.LSInitiateBattle(lsHallway);
         assertTrue(scn.DSCardActionAvailable(threeb3, "Reveal"));

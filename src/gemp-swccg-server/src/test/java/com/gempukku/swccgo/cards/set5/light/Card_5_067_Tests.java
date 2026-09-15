@@ -635,10 +635,12 @@ public class Card_5_067_Tests {
 
         scn.MoveLocationToTable(hoth);
         scn.MoveLocationToTable(bigOne);
-        scn.MoveCardsToLocation(bigOne, tie, xwing);
         scn.MoveCardsToLSHand(rescue);
 
+        // Place ships after skipping the Move phase so Asteroid Rules destiny cannot
+        // randomly crash the TIE before battle is offered.
         scn.SkipToDSTurn(Phase.BATTLE);
+        scn.MoveCardsToLocation(bigOne, tie, xwing);
         scn.DSInitiateBattle(bigOne);
         assertFalse(scn.LSAnyDecisionsAvailable() && scn.LSCardPlayAvailable(rescue));
     }

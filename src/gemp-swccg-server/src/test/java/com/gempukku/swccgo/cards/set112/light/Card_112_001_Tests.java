@@ -121,10 +121,13 @@ public class Card_112_001_Tests {
 
         scn.StartGame();
 
-        // Objective illegal -> out of play; locations put back to Reserve Deck
+        // Objective illegal -> out of play; locations put back to Reserve Deck.
+        // The top card of that pile is Zone.TOP_OF_RESERVE_DECK (public), the rest are RESERVE_DECK.
         assertEquals(Zone.OUT_OF_PLAY, agents.getZone());
-        assertEquals(Zone.RESERVE_DECK, hutt.getZone());
-        assertEquals(Zone.RESERVE_DECK, chamberLs.getZone());
+        assertTrue("Hutt should be in Reserve Deck; zone=" + hutt.getZone(),
+                hutt.getZone() == Zone.RESERVE_DECK || hutt.getZone() == Zone.TOP_OF_RESERVE_DECK);
+        assertTrue("LS Audience Chamber should be in Reserve Deck; zone=" + chamberLs.getZone(),
+                chamberLs.getZone() == Zone.RESERVE_DECK || chamberLs.getZone() == Zone.TOP_OF_RESERVE_DECK);
 
         // Converted DS site must be promoted back to visible top of the location stack
         assertEquals(Zone.LOCATIONS, chamberDs.getZone());
