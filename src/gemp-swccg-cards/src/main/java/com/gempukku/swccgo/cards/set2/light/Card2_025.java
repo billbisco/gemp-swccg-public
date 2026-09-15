@@ -47,12 +47,13 @@ public class Card2_025 extends AbstractCharacterDevice {
 
     @Override
     protected Filter getGameTextValidDeployTargetFilter(SwccgGame game, PhysicalCard self, PlayCardOptionId playCardOptionId, boolean asReact) {
-        return Filters.and(Filters.your(self), Filters.astromech_droid);
+        // Permanent astromech aboard (e.g. Artoo-Detoo In Red 5) is an astromech for this deploy (#974).
+        return Filters.and(Filters.your(self), Filters.or(Filters.astromech_droid, Filters.hasPermanentAstromech));
     }
 
     @Override
     protected Filter getGameTextValidToUseDeviceFilter(final SwccgGame game, final PhysicalCard self) {
-        return Filters.astromech_droid;
+        return Filters.or(Filters.astromech_droid, Filters.hasPermanentAstromech);
     }
 
     @Override
@@ -85,7 +86,7 @@ public class Card2_025 extends AbstractCharacterDevice {
     protected List<OptionalGameTextTriggerAction> getGameTextOptionalAfterTriggers(final String playerId, SwccgGame game, final EffectResult effectResult, final PhysicalCard self, int gameTextSourceCardId) {
         // Check condition(s)
         if (TriggerConditions.battleInitiatedAt(game, effectResult, Filters.and(Filters.site, Filters.wherePresent(self)))
-                && GameConditions.isAttachedTo(game, self, Filters.R2D2)
+                && GameConditions.isAttachedTo(game, self, Filters.R2D2_or_has_R2D2_as_permanent_astromech)
                 && GameConditions.canUseDevice(game, self)) {
 
             final OptionalGameTextTriggerAction action = new OptionalGameTextTriggerAction(self, gameTextSourceCardId);
