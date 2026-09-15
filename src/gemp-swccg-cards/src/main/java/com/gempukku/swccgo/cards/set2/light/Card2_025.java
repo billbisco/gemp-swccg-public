@@ -14,6 +14,8 @@ import com.gempukku.swccgo.common.Title;
 import com.gempukku.swccgo.common.Uniqueness;
 import com.gempukku.swccgo.filters.Filter;
 import com.gempukku.swccgo.filters.Filters;
+import com.gempukku.swccgo.game.DeployAsCaptiveOption;
+import com.gempukku.swccgo.game.DeploymentRestrictionsOption;
 import com.gempukku.swccgo.game.PhysicalCard;
 import com.gempukku.swccgo.game.SwccgGame;
 import com.gempukku.swccgo.logic.TriggerConditions;
@@ -43,6 +45,13 @@ public class Card2_025 extends AbstractCharacterDevice {
         setGameText("Deploy on your astromech droid. Cancels an 'exploding' Program Trap here. Any starship it is aboard is immune to Lateral Damage and ion cannons. If deployed on R2-D2, may lose Fire Extinguisher to cancel a battle just initiated where present at a site.");
         addIcons(Icon.A_NEW_HOPE);
         addKeywords(Keyword.DEVICE_THAT_DEPLOYS_ON_DROIDS);
+    }
+
+    @Override
+    protected Filter getValidDeployTargetFilterForCardType(String playerId, SwccgGame game, PhysicalCard self, boolean isSimDeployAttached, boolean ignorePresenceOrForceIcons, DeploymentRestrictionsOption deploymentRestrictionsOption, DeployAsCaptiveOption deployAsCaptiveOption) {
+        // Character-device default is character-only; this device may also attach to a starship
+        // that has a permanent astromech (#974).
+        return Filters.and(Filters.your(self), Filters.or(Filters.character, Filters.hasPermanentAstromech));
     }
 
     @Override
