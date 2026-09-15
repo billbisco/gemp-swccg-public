@@ -32,6 +32,7 @@ public class Card_207_009_Tests {
                 new HashMap<>() {{
                     put("sabine", "207_009"); // Sabine Wren
                     put("blaster", "1_152"); // Blaster
+                    put("satm", "2_057"); // Sorry About The Mess
                 }},
                 new HashMap<>() {{
                     put("trooper", "1_194"); // Stormtrooper
@@ -107,9 +108,8 @@ public class Card_207_009_Tests {
     }
 
     @Test
-    public void SabineWrenOffersPaidFireAndFreePlus2WhenForceAvailable() {
+    public void SabineWrenBattleFireAsksMayPrompt() {
         var scn = GetScenario();
-
         var sabine = scn.GetLSCard("sabine");
         var blaster = scn.GetLSCard("blaster");
         var trooper = scn.GetDSCard("trooper");
@@ -120,20 +120,52 @@ public class Card_207_009_Tests {
         scn.AttachCardsTo(sabine, blaster);
 
         scn.SkipToLSTurn(Phase.BATTLE);
-        assertTrue(scn.LSCanInitiateBattle(site));
         scn.LSInitiateBattle(site);
         assertTrue(scn.AwaitingLSWeaponsSegmentActions());
+        assertTrue(scn.LSCardActionAvailable(blaster, "Fire"));
+        assertFalse(scn.GetLSAvailableActions().stream().anyMatch(a -> a.contains("for free and add 2")));
 
-        var actions = scn.GetLSAvailableActions();
-        assertTrue(actions.stream().anyMatch(a -> a.contains("Fire") && !a.contains("for free and add 2")));
-        assertTrue(actions.stream().anyMatch(a -> a.contains("for free and add 2")));
+        scn.LSUseCardAction(blaster, "Fire");
+        assertTrue(scn.LSDecisionAvailable("fire for free and add 2"));
+        scn.LSChooseOption("No");
+        scn.LSChooseCard(trooper);
+        scn.PassAllResponses();
         assertNull(sabine.getWhileInPlayData());
     }
 
     @Test
-    public void SabineWrenFreePlus2ConsumesPackage() {
+    public void SorryAboutTheMessOffersSabineMayDuringControlPhase() {
         var scn = GetScenario();
+        var sabine = scn.GetLSCard("sabine");
+        var blaster = scn.GetLSCard("blaster");
+        var satm = scn.GetLSCard("satm");
+        var trooper = scn.GetDSCard("trooper");
+        var site = scn.GetLSStartingLocation();
 
+        scn.StartGame();
+        scn.MoveCardsToLocation(site, sabine, trooper);
+        scn.AttachCardsTo(sabine, blaster);
+        scn.MoveCardsToLSHand(satm);
+        scn.LSActivateForceCheat(6);
+
+        scn.SkipToLSTurn(Phase.CONTROL);
+        assertTrue(scn.LSCardActionAvailable(satm));
+        scn.LSUseCardAction(satm);
+        scn.PassAllResponses();
+        scn.LSChooseCard(blaster);
+        scn.PassAllResponses();
+        assertTrue(scn.LSDecisionAvailable("fire for free and add 2"));
+        scn.LSChooseOption("Yes");
+        if (scn.LSGetDecision() != null && scn.LSHasCardChoiceAvailable(trooper)) {
+            scn.LSChooseCard(trooper);
+        }
+        scn.PassAllResponses();
+        assertNotNull(sabine.getWhileInPlayData());
+    }
+
+    @Test
+    public void SabineWrenWeaponAvailableWithNoForceWhileMayUnused() {
+        var scn = GetScenario();
         var sabine = scn.GetLSCard("sabine");
         var blaster = scn.GetLSCard("blaster");
         var trooper = scn.GetDSCard("trooper");
@@ -145,18 +177,20 @@ public class Card_207_009_Tests {
 
         scn.SkipToLSTurn(Phase.BATTLE);
         scn.LSInitiateBattle(site);
+        int leftoverForce = scn.GetLSForcePileCount();
+        if (leftoverForce > 0) {
+            scn.LSUseForceCheat(leftoverForce);
+        }
+        assertEquals(0, scn.GetLSForcePileCount());
         assertTrue(scn.AwaitingLSWeaponsSegmentActions());
-        int forceAfterBattle = scn.GetLSForcePileCount();
+        assertTrue(scn.LSCardActionAvailable(blaster, "Fire"));
 
-        scn.LSUseCardAction(blaster, "for free and add 2");
+        scn.LSUseCardAction(blaster, "Fire");
+        assertTrue(scn.LSDecisionAvailable("fire for free and add 2"));
+        scn.LSChooseOption("Yes");
         scn.LSChooseCard(trooper);
         scn.PassAllResponses();
-
         assertNotNull(sabine.getWhileInPlayData());
-        assertEquals(forceAfterBattle, scn.GetLSForcePileCount());
-        if (scn.AwaitingLSWeaponsSegmentActions()) {
-            var actions = scn.GetLSAvailableActions();
-            assertFalse(actions.stream().anyMatch(a -> a.contains("for free and add 2")));
-        }
+        assertEquals(0, scn.GetLSForcePileCount());
     }
 }

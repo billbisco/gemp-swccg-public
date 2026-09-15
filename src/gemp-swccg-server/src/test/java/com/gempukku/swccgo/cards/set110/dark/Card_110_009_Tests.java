@@ -10,7 +10,6 @@ import com.gempukku.swccgo.common.Side;
 import com.gempukku.swccgo.common.Uniqueness;
 import com.gempukku.swccgo.framework.StartingSetup;
 import com.gempukku.swccgo.framework.VirtualTableScenario;
-import com.gempukku.swccgo.game.PhysicalCardImpl;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -34,6 +33,8 @@ public class Card_110_009_Tests {
                 new HashMap<>() {{
                     put("jodo", "110_009"); // Jodo Kast
                     put("blaster", "1_317"); // Imperial Blaster
+                    put("dfv", "200_118"); // Defensive Fire (V)
+                    put("sniper", "2_139"); // Sniper
                 }},
                 10,
                 10,
@@ -98,9 +99,8 @@ public class Card_110_009_Tests {
     }
 
     @Test
-    public void JodoKastOffersPaidFireAndFreePlus2WhenForceAvailable() {
+    public void JodoKastBattleFireAsksMayPrompt() {
         var scn = GetScenario();
-
         var luke = scn.GetLSCard("luke");
         var jodo = scn.GetDSCard("jodo");
         var blaster = scn.GetDSCard("blaster");
@@ -111,48 +111,22 @@ public class Card_110_009_Tests {
         scn.AttachCardsTo(jodo, blaster);
 
         scn.SkipToPhase(Phase.BATTLE);
-        assertTrue(scn.GetDSForcePileCount() >= 2);
         scn.DSInitiateBattle(site);
         assertTrue(scn.AwaitingDSWeaponsSegmentActions());
+        assertTrue(scn.DSCardActionAvailable(blaster, "Fire"));
+        assertFalse(scn.GetDSAvailableActions().stream().anyMatch(a -> a.contains("for free and add 2")));
 
-        var actions = scn.GetDSAvailableActions();
-        assertTrue(actions.stream().anyMatch(a -> a.contains("Fire") && !a.contains("for free and add 2")));
-        assertTrue(actions.stream().anyMatch(a -> a.contains("for free and add 2")));
+        scn.DSUseCardAction(blaster, "Fire");
+        assertTrue(scn.DSDecisionAvailable("fire for free and add 2"));
+        scn.DSChooseOption("No");
+        scn.DSChooseCard(luke);
+        scn.PassAllResponses();
         assertNull(jodo.getWhileInPlayData());
     }
 
     @Test
-    public void JodoKastPaidFireDoesNotConsumeFreePlus2Package() {
+    public void JodoKastBattleFireYesConsumesMayAndDoesNotSpendFireForce() {
         var scn = GetScenario();
-
-        var luke = scn.GetLSCard("luke");
-        var jodo = scn.GetDSCard("jodo");
-        var blaster = scn.GetDSCard("blaster");
-        var site = scn.GetLSStartingLocation();
-
-        scn.StartGame();
-        scn.MoveCardsToLocation(site, luke, jodo);
-        scn.AttachCardsTo(jodo, blaster);
-
-        scn.SkipToPhase(Phase.BATTLE);
-        int forceBeforeBattle = scn.GetDSForcePileCount();
-        scn.DSInitiateBattle(site);
-        assertTrue(scn.AwaitingDSWeaponsSegmentActions());
-        int forceAfterBattle = scn.GetDSForcePileCount();
-        assertEquals(forceBeforeBattle - 1, forceAfterBattle);
-
-        scn.DSChooseAction("Fire Imperial Blaster");
-        scn.DSChooseCard(luke);
-        scn.PassAllResponses();
-
-        assertNull(jodo.getWhileInPlayData());
-        assertEquals(forceAfterBattle - 1, scn.GetDSForcePileCount()); // paid 1 to fire Imperial Blaster
-    }
-
-    @Test
-    public void JodoKastFreePlus2ConsumesPackageAndDoesNotSpendFireForce() {
-        var scn = GetScenario();
-
         var luke = scn.GetLSCard("luke");
         var jodo = scn.GetDSCard("jodo");
         var blaster = scn.GetDSCard("blaster");
@@ -164,28 +138,120 @@ public class Card_110_009_Tests {
 
         scn.SkipToPhase(Phase.BATTLE);
         scn.DSInitiateBattle(site);
-        assertTrue(scn.AwaitingDSWeaponsSegmentActions());
         int forceAfterBattle = scn.GetDSForcePileCount();
-
-        assertTrue(scn.DSCardActionAvailable(blaster, "for free and add 2"));
-        scn.DSUseCardAction(blaster, "for free and add 2");
+        scn.DSUseCardAction(blaster, "Fire");
+        scn.DSChooseOption("Yes");
         scn.DSChooseCard(luke);
         scn.PassAllResponses();
-
         assertNotNull(jodo.getWhileInPlayData());
-        assertEquals(forceAfterBattle, scn.GetDSForcePileCount()); // fire itself was free
-
-        if (scn.AwaitingDSWeaponsSegmentActions()) {
-            var actions = scn.GetDSAvailableActions();
-            assertFalse(actions.stream().anyMatch(a -> a.contains("for free and add 2")));
-            assertTrue(actions.stream().anyMatch(a -> a.contains("Fire") && !a.contains("for free and add 2")));
-        }
+        assertEquals(forceAfterBattle, scn.GetDSForcePileCount());
     }
 
     @Test
-    public void JodoKastWithZeroForceOnlyOffersFreePlus2() {
+    public void JodoKastSniperOffersMayDuringControlPhase() {
         var scn = GetScenario();
+        var luke = scn.GetLSCard("luke");
+        var jodo = scn.GetDSCard("jodo");
+        var blaster = scn.GetDSCard("blaster");
+        var sniper = scn.GetDSCard("sniper");
+        var site = scn.GetLSStartingLocation();
 
+        scn.StartGame();
+        scn.MoveCardsToLocation(site, luke, jodo);
+        scn.AttachCardsTo(jodo, blaster);
+        scn.MoveCardsToDSHand(sniper);
+        scn.DSActivateForceCheat(6);
+
+        scn.SkipToDSTurn(Phase.CONTROL);
+        assertTrue(scn.DSCardActionAvailable(sniper));
+        scn.DSUseCardAction(sniper);
+        scn.PassAllResponses();
+        scn.DSChooseCard(blaster);
+        scn.PassAllResponses();
+        assertTrue(scn.DSDecisionAvailable("fire for free and add 2"));
+        scn.DSChooseOption("Yes");
+        if (scn.DSGetDecision() != null && scn.DSHasCardChoiceAvailable(luke)) {
+            scn.DSChooseCard(luke);
+        }
+        scn.PassAllResponses();
+        assertNotNull(jodo.getWhileInPlayData());
+    }
+
+    @Test
+    public void DefensiveFireVDoesNotAutoConsumeJodoMay() {
+        var scn = GetScenario();
+        var luke = scn.GetLSCard("luke");
+        var jodo = scn.GetDSCard("jodo");
+        var blaster = scn.GetDSCard("blaster");
+        var dfv = scn.GetDSCard("dfv");
+        var site = scn.GetLSStartingLocation();
+
+        scn.StartGame();
+        scn.MoveCardsToLocation(site, luke, jodo);
+        scn.AttachCardsTo(jodo, blaster);
+        scn.MoveCardsToDSHand(dfv);
+
+        scn.SkipToLSTurn(Phase.BATTLE);
+        scn.LSUseCardAction(site, "Initiate battle");
+        scn.PassForceUseResponses();
+        if (scn.LSDecisionAvailable("BATTLE_INITIATED") && !scn.DSCardActionAvailable(dfv)) {
+            scn.LSPass();
+        }
+        assertTrue(scn.DSCardActionAvailable(dfv));
+        scn.DSUseCardAction(dfv);
+        scn.PassAllResponses();
+        scn.DSChooseCard(blaster);
+        scn.PassAllResponses();
+        assertTrue(scn.DSDecisionAvailable("fire for free and add 2"));
+        scn.DSChooseOption("No");
+        scn.PrepareDSDestiny(2);
+        if (scn.DSGetDecision() != null && scn.DSHasCardChoiceAvailable(luke)) {
+            scn.DSChooseCard(luke);
+        }
+        scn.PassAllResponses();
+        assertNull(jodo.getWhileInPlayData());
+        assertFalse("Destiny 2 + Defensive Fire +2 = 4 is not > Luke defense 5 without Jodo", luke.isHit());
+    }
+
+    @Test
+    public void DefensiveFireVPlusJodoMayStacksToPlus4() {
+        var scn = GetScenario();
+        var luke = scn.GetLSCard("luke");
+        var jodo = scn.GetDSCard("jodo");
+        var blaster = scn.GetDSCard("blaster");
+        var dfv = scn.GetDSCard("dfv");
+        var site = scn.GetLSStartingLocation();
+
+        scn.StartGame();
+        scn.MoveCardsToLocation(site, luke, jodo);
+        scn.AttachCardsTo(jodo, blaster);
+        scn.MoveCardsToDSHand(dfv);
+
+        scn.SkipToLSTurn(Phase.BATTLE);
+        scn.LSUseCardAction(site, "Initiate battle");
+        scn.PassForceUseResponses();
+        if (scn.LSDecisionAvailable("BATTLE_INITIATED") && !scn.DSCardActionAvailable(dfv)) {
+            scn.LSPass();
+        }
+        assertTrue(scn.DSCardActionAvailable(dfv));
+        scn.DSUseCardAction(dfv);
+        scn.PassAllResponses();
+        scn.DSChooseCard(blaster);
+        scn.PassAllResponses();
+        assertTrue(scn.DSDecisionAvailable("fire for free and add 2"));
+        scn.DSChooseOption("Yes");
+        scn.PrepareDSDestiny(2);
+        if (scn.DSGetDecision() != null && scn.DSHasCardChoiceAvailable(luke)) {
+            scn.DSChooseCard(luke);
+        }
+        scn.PassAllResponses();
+        assertNotNull(jodo.getWhileInPlayData());
+        assertTrue("Destiny 2 + Defensive Fire +2 + Jodo +2 = 6 > Luke defense 5", luke.isHit());
+    }
+
+    @Test
+    public void JodoKastWeaponAvailableWithNoForceWhileMayUnused() {
+        var scn = GetScenario();
         var luke = scn.GetLSCard("luke");
         var jodo = scn.GetDSCard("jodo");
         var blaster = scn.GetDSCard("blaster");
@@ -196,18 +262,21 @@ public class Card_110_009_Tests {
         scn.AttachCardsTo(jodo, blaster);
 
         scn.SkipToPhase(Phase.BATTLE);
-        // Leave exactly 1 Force to initiate battle (cost 1), so 0 remain to pay for fire
-        while (scn.GetDSForcePileCount() > 1) {
-            scn.MoveCardsToTopOfDSReserveDeck((PhysicalCardImpl) scn.GetTopOfDSForcePile());
-        }
-        assertEquals(1, scn.GetDSForcePileCount());
-
         scn.DSInitiateBattle(site);
-        assertTrue(scn.AwaitingDSWeaponsSegmentActions());
+        int leftoverForce = scn.GetDSForcePileCount();
+        if (leftoverForce > 0) {
+            scn.DSUseForceCheat(leftoverForce);
+        }
         assertEquals(0, scn.GetDSForcePileCount());
+        assertTrue(scn.AwaitingDSWeaponsSegmentActions());
+        assertTrue(scn.DSCardActionAvailable(blaster, "Fire"));
 
-        var actions = scn.GetDSAvailableActions();
-        assertTrue(actions.stream().anyMatch(a -> a.contains("for free and add 2")));
-        assertFalse(actions.stream().anyMatch(a -> a.contains("Fire") && !a.contains("for free and add 2")));
+        scn.DSUseCardAction(blaster, "Fire");
+        assertTrue(scn.DSDecisionAvailable("fire for free and add 2"));
+        scn.DSChooseOption("Yes");
+        scn.DSChooseCard(luke);
+        scn.PassAllResponses();
+        assertNotNull(jodo.getWhileInPlayData());
+        assertEquals(0, scn.GetDSForcePileCount());
     }
 }
